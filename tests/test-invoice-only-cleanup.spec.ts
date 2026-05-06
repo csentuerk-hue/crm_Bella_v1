@@ -28,13 +28,13 @@ type CleanupReport = {
   deletedInvoiceNumbers?: string[];
 };
 
-test("invoice-only cleanup detects test invoices and keeps real invoices", async ({ request }) => {
-  const unique = Date.now().toString();
+test("invoice-only cleanup detects test invoices and keeps real invoices", async ({ request }, testInfo) => {
+  const unique = `${Date.now()}-${testInfo.workerIndex}-${Math.random().toString(36).slice(2, 8)}`;
 
   const realCustomerResponse = await request.post("/api/customers", {
     data: {
       name: `Real Kundin ${unique}`,
-      email: `real-${unique}@bella-studio.de`,
+      email: `real-${unique}@bella-it.local`,
       phone: "01701234567",
       archived: false,
       mediaConsent: false,

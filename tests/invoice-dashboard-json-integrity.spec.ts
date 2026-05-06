@@ -21,14 +21,14 @@ type InvoiceApiResponse = {
   updatedAt: string;
 };
 
-test("invoice flows remain stable and JSON-safe", async ({ request }) => {
-  const unique = Date.now().toString();
+test("invoice flows remain stable and JSON-safe", async ({ request }, testInfo) => {
+  const unique = `${Date.now()}-${testInfo.workerIndex}-${Math.random().toString(36).slice(2, 8)}`;
   const customerName = `JSON Stabil Kundin ${unique}`;
 
   const customerResponse = await request.post("/api/customers", {
     data: {
       name: customerName,
-      email: `json-${unique}@example.com`,
+      email: `json-${unique}@bella-it.local`,
       phone: "01701231234",
       street: "Musterstraße",
       houseNumber: "12",
@@ -36,14 +36,14 @@ test("invoice flows remain stable and JSON-safe", async ({ request }) => {
       city: "Münster",
       country: "Deutschland",
       billingAddressEnabled: true,
-      invoiceRecipientName: "AGNC EVENTS UG",
-      invoiceRecipientAttention: "z. Hd. Max Mustermann",
-      invoiceStreet: "Hammer Straße",
+      invoiceRecipientName: "Studio Event UG",
+      invoiceRecipientAttention: "z. Hd. Maria Beispiel",
+      invoiceStreet: "Hammerstrasse",
       invoiceHouseNumber: "126",
       invoicePostalCode: "48153",
       invoiceCity: "Münster",
       invoiceCountry: "Deutschland",
-      invoiceEmail: "invoice@agnc.events",
+      invoiceEmail: `rechnung-${unique}@bella-it.local`,
       mediaConsent: false,
       status: "NEU",
       archived: false,
@@ -93,7 +93,7 @@ test("invoice flows remain stable and JSON-safe", async ({ request }) => {
     data: {
       customerId: customer.id,
       paymentMethod: "BANK_TRANSFER",
-      items: [{ name: "Studio Komplettpaket", quantity: 1, priceCents: 32000 }],
+      items: [{ name: "Premium Komplettpaket", quantity: 1, priceCents: 32000 }],
     },
   });
   expect(over250DraftResponse.ok()).toBeTruthy();
@@ -128,14 +128,14 @@ test("invoice flows remain stable and JSON-safe", async ({ request }) => {
       action: "FINALIZE",
       paymentMethod: "BANK_TRANSFER",
       paymentStatus: "OPEN",
-      recipientName: "AGNC EVENTS UG",
-      recipientAttention: "z. Hd. Max Mustermann",
-      recipientStreet: "Hammer Straße",
+      recipientName: "Studio Event UG",
+      recipientAttention: "z. Hd. Maria Beispiel",
+      recipientStreet: "Hammerstrasse",
       recipientHouseNumber: "126",
       recipientZipCode: "48153",
       recipientCity: "Münster",
       recipientCountry: "Deutschland",
-      recipientEmail: "invoice@agnc.events",
+      recipientEmail: `rechnung-${unique}@bella-it.local`,
       items: over250Draft.items.map((item) => ({
         service: item.service,
         quantity: item.quantity,

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-test("appointment based invoice flow still works", async ({ request }) => {
-  const unique = Date.now().toString();
+test("appointment based invoice flow still works", async ({ request }, testInfo) => {
+  const unique = `${Date.now()}-${testInfo.workerIndex}-${Math.random().toString(36).slice(2, 8)}`;
 
   const customerResponse = await request.post("/api/customers", {
     data: {

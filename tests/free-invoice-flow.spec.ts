@@ -1,8 +1,8 @@
 ﻿import { expect, test } from "@playwright/test";
 
-test("free invoice can be created without appointment", async ({ page, request }) => {
-  const unique = Date.now().toString();
-  const customerName = `FreeInvoice Kundin ${unique}`;
+test("free invoice can be created without appointment", async ({ page, request }, testInfo) => {
+  const unique = `${Date.now()}-${testInfo.workerIndex}-${Math.random().toString(36).slice(2, 8)}`;
+  const customerName = `Freie Rechnung Kundin ${unique}`;
 
   const customerResponse = await request.post("/api/customers", {
     data: {

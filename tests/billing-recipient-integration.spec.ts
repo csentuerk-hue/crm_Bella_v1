@@ -8,7 +8,7 @@ test("Settings flow: invoice settings load, save and persist", async ({ page }) 
 
   const closingTextField = page.getByLabel("Abschlusstext");
   const originalValue = await closingTextField.inputValue();
-  const updatedValue = `${originalValue} [Test ${marker}]`;
+  const updatedValue = `${originalValue} [PW-${marker}]`;
 
   await closingTextField.fill(updatedValue);
   await page.getByRole("button", { name: "Rechnungseinstellungen speichern" }).click();
@@ -25,15 +25,15 @@ test("Settings flow: invoice settings load, save and persist", async ({ page }) 
 test("Integration flow: customer billing address -> appointment -> invoice snapshot", async ({
   page,
   request,
-}) => {
-  const unique = Date.now().toString().slice(-6);
-  const customerName = `Rechnungstest ${unique}`;
-  const recipientName = `AGNC EVENTS UG ${unique}`;
+}, testInfo) => {
+  const unique = `${Date.now()}-${testInfo.workerIndex}-${Math.random().toString(36).slice(2, 8)}`;
+  const customerName = `Rechnungslauf ${unique}`;
+  const recipientName = `Studio Event UG ${unique}`;
   const street = "Hammer Strasse";
   const houseNumber = "126";
   const postalCode = "48153";
   const city = "Muenster";
-  const recipientEmail = `invoice${unique}@example.com`;
+  const recipientEmail = `invoice-${unique}@bella-it.local`;
   const startsAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString().slice(0, 16);
 
   await page.goto("/customers");
@@ -42,7 +42,7 @@ test("Integration flow: customer billing address -> appointment -> invoice snaps
   await page.getByRole("button", { name: "Neue Kundin" }).first().click();
   await page.getByLabel("Name (Pflichtfeld)").fill(customerName);
   await page.getByLabel("Telefonnummer").fill("01701234567");
-  await page.getByLabel("E-Mail").fill(`kunde${unique}@example.com`);
+  await page.getByLabel("E-Mail").fill(`kunde-${unique}@bella-it.local`);
   await page.getByLabel("Straße").fill("Beispielweg");
   await page.getByLabel("Hausnummer").fill("5");
   await page.getByLabel("PLZ").fill("48155");

@@ -3,9 +3,9 @@ import { expect, test } from "@playwright/test";
 test("CRM flow: customer -> appointment -> invoice stays consistent after reload", async ({
   page,
   request,
-}) => {
-  const unique = Date.now().toString().slice(-6);
-  const customerName = `Testkundin ${unique}`;
+  }, testInfo) => {
+  const unique = `${Date.now()}-${testInfo.workerIndex}-${Math.random().toString(36).slice(2, 8)}`;
+  const customerName = `Flow Kundin ${unique}`;
   const startsAt = new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16);
 
   await page.goto("/dashboard");
@@ -17,8 +17,8 @@ test("CRM flow: customer -> appointment -> invoice stays consistent after reload
   await page.getByRole("button", { name: "Neue Kundin" }).first().click();
   await page.getByLabel("Name (Pflichtfeld)").fill(customerName);
   await page.getByLabel("Telefonnummer").fill("01701234567");
-  await page.getByLabel("E-Mail").fill(`kunde${unique}@example.com`);
-  await page.getByLabel("Interne Notiz").fill("Erstellt durch Playwright-Test");
+  await page.getByLabel("E-Mail").fill(`kunde-${unique}@bella-it.local`);
+  await page.getByLabel("Interne Notiz").fill("Erstellt durch E2E-Ablaufpruefung");
   await page.getByRole("button", { name: "Speichern" }).click();
   await expect(page.getByText("Kundin wurde angelegt.")).toBeVisible();
 
