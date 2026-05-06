@@ -18,6 +18,8 @@ const forcedDeleteSchema = z.object({
 });
 
 const FORCED_DELETE_CODE = "54323";
+const INVOICE_DELETE_BLOCK_MESSAGE =
+  "Kundin kann nicht dauerhaft geloescht werden, weil verknuepfte Rechnungen vorhanden sind.";
 
 export async function GET(
   request: NextRequest,
@@ -208,6 +210,8 @@ export async function DELETE(
     return NextResponse.json({ error: "Kundin nicht gefunden." }, { status: 404 });
   }
 
+  const invoiceLinkedCount = customer.invoices.length;
+
   if (isForcedDelete) {
     const hasValidCode =
       parsedDeletePayload.data.confirmationCode?.trim() === FORCED_DELETE_CODE;
@@ -223,11 +227,11 @@ export async function DELETE(
       );
     }
 
-    const result = await prisma.$transaction(async (tx) => {
-      const deletedInvoices = await tx.invoice.deleteMany({
-        where: { customerId: parsedParams.data.id },
-      });
+    if (invoiceLinkedCount > 0) {
+      return NextResponse.json({ error: INVOICE_DELETE_BLOCK_MESSAGE }, { status: 409 });
+    }
 
+    const result = await prisma.$transaction(async (tx) => {
       const deletedAppointments = await tx.appointment.deleteMany({
         where: { customerId: parsedParams.data.id },
       });
@@ -245,7 +249,6 @@ export async function DELETE(
       });
 
       return {
-        deletedInvoices: deletedInvoices.count,
         deletedAppointments: deletedAppointments.count,
         deletedTreatmentEntries: deletedTreatmentEntries.count,
         deletedCustomerNotes: deletedCustomerNotes.count,
@@ -256,20 +259,14 @@ export async function DELETE(
       ok: true,
       mode: "forced",
       deletedCustomerId: parsedParams.data.id,
-      deletedInvoices: result.deletedInvoices,
       deletedAppointments: result.deletedAppointments,
       deletedTreatmentEntries: result.deletedTreatmentEntries,
       deletedCustomerNotes: result.deletedCustomerNotes,
     });
   }
 
-  const invoiceLinkedCount = customer.invoices.length;
-
   if (invoiceLinkedCount > 0) {
-    return NextResponse.json(
-      { error: "Kundin kann wegen verknuepfter Rechnungen nicht gelöscht werden." },
-      { status: 409 },
-    );
+    return NextResponse.json({ error: INVOICE_DELETE_BLOCK_MESSAGE }, { status: 409 });
   }
 
   if (customer.appointments.length > 0) {
