@@ -23,7 +23,7 @@ export const DEFAULT_INVOICE_SETTINGS_INPUT = {
   smallBusinessEnabled: true,
   defaultPaymentDeadlineBusinessDays: 10,
   defaultCurrency: "EUR",
-  defaultPaymentMethod: "BANK_TRANSFER" as const,
+  defaultPaymentMethod: "CASH" as const,
   invoicePrefix: "BBS",
   recipientLabel: "Rechnung an:",
   transferPaymentTitle: "Zahlungsart: Überweisung",

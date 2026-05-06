@@ -152,7 +152,7 @@ function mapInvoiceToEditor(invoice: InvoiceDTO): InvoiceEditorForm {
     paymentMethod:
       invoice.paymentMethod === "CASH" || invoice.paymentMethod === "BANK_TRANSFER"
         ? invoice.paymentMethod
-        : "BANK_TRANSFER",
+        : "CASH",
     paymentStatus: invoice.paymentStatus === "PAID" ? "PAID" : "OPEN",
     issueDate: toDateInput(invoice.issueDate),
     serviceDate: toDateInput(invoice.serviceDate),
@@ -227,7 +227,7 @@ export default function InvoicesCreatePage() {
   const [createAppointmentId, setCreateAppointmentId] = useState("");
   const [createCustomerId, setCreateCustomerId] = useState("");
   const [createPaymentMethod, setCreatePaymentMethod] =
-    useState<PaymentMethod>("BANK_TRANSFER");
+    useState<PaymentMethod>("CASH");
   const [createLines, setCreateLines] = useState<LineForm[]>([createLine()]);
 
   const [editor, setEditor] = useState<InvoiceEditorForm | null>(null);

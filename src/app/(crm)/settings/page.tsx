@@ -74,7 +74,7 @@ export default function SettingsPage() {
           ...response,
           defaultPaymentMethod:
             response.defaultPaymentMethod === "CARD"
-              ? "BANK_TRANSFER"
+              ? "CASH"
               : response.defaultPaymentMethod,
         });
       } catch (error) {

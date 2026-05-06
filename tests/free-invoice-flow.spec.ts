@@ -47,6 +47,7 @@ test("free invoice can be created without appointment", async ({ page, request }
   const invoices = (await invoicesResponse.json()) as Array<{
     id: string;
     invoiceNumber: string | null;
+    paymentMethod: "BANK_TRANSFER" | "CASH" | "CARD";
     totalCents: number;
     items: Array<{ service: string; quantity: number; unitPriceCents: number }>;
   }>;
@@ -58,6 +59,7 @@ test("free invoice can be created without appointment", async ({ page, request }
     throw new Error("Freier Rechnungsentwurf mit manueller Position wurde nicht gefunden.");
   }
   expect(createdInvoice.totalCents).toBe(7900);
+  expect(createdInvoice.paymentMethod).toBe("CASH");
 
   const previewPath = createdInvoice.invoiceNumber
     ? `/invoices/${createdInvoice.id}/preview?invoiceNumber=${encodeURIComponent(createdInvoice.invoiceNumber)}`

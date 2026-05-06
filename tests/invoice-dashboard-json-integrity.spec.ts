@@ -258,13 +258,48 @@ test("invoice flows remain stable and JSON-safe", async ({ request }, testInfo) 
       },
     },
   );
-  expect(editFinalizedResponse.ok()).toBeTruthy();
-  const editedFinalized = (await editFinalizedResponse.json()) as InvoiceApiResponse;
-  expect(editedFinalized.lifecycleStatus).toBe("FINALISIERT");
-  expect(editedFinalized.closingText.length).toBeGreaterThan(0);
-  expect(editedFinalized.closingText).not.toMatch(/Aktualisierter Abschlusstext\\s+\\d+/i);
-  expect(editedFinalized.subtotalCents).toBe(9000);
-  expect(editedFinalized.totalCents).toBe(9000);
+  expect(editFinalizedResponse.status()).toBe(409);
+  const editFinalizedError = (await editFinalizedResponse.json()) as { error: string };
+  expect(editFinalizedError.error).toContain("Finalisierte Rechnungen");
+
+  const secondCustomerResponse = await request.post("/api/customers", {
+    data: {
+      name: `Sperrtest Kundin ${unique}`,
+      mediaConsent: false,
+      status: "NEU",
+      archived: false,
+    },
+  });
+  expect(secondCustomerResponse.ok()).toBeTruthy();
+  const secondCustomer = (await secondCustomerResponse.json()) as { id: string };
+
+  const finalizedCustomerChangeResponse = await request.put(
+    `/api/invoices/${fromAppointmentFinalized.id}`,
+    {
+      data: {
+        customerId: secondCustomer.id,
+      },
+    },
+  );
+  expect(finalizedCustomerChangeResponse.status()).toBe(409);
+  const finalizedCustomerChangeError = (await finalizedCustomerChangeResponse.json()) as {
+    error: string;
+  };
+  expect(finalizedCustomerChangeError.error).toContain("Finalisierte Rechnungen");
+
+  const finalizedTextChangeResponse = await request.put(
+    `/api/invoices/${fromAppointmentFinalized.id}`,
+    {
+      data: {
+        closingText: "Diese Änderung darf nach Finalisierung nicht gespeichert werden.",
+      },
+    },
+  );
+  expect(finalizedTextChangeResponse.status()).toBe(409);
+  const finalizedTextChangeError = (await finalizedTextChangeResponse.json()) as {
+    error: string;
+  };
+  expect(finalizedTextChangeError.error).toContain("Finalisierte Rechnungen");
 
   const reloadedInvoiceResponse = await request.get(
     `/api/invoices/${fromAppointmentFinalized.id}?invoiceNumber=${encodeURIComponent(
@@ -275,8 +310,8 @@ test("invoice flows remain stable and JSON-safe", async ({ request }, testInfo) 
   const reloadedInvoice = (await reloadedInvoiceResponse.json()) as InvoiceApiResponse;
   expect(reloadedInvoice.closingText.length).toBeGreaterThan(0);
   expect(reloadedInvoice.closingText).not.toMatch(/Aktualisierter Abschlusstext\\s+\\d+/i);
-  expect(reloadedInvoice.subtotalCents).toBe(9000);
-  expect(reloadedInvoice.totalCents).toBe(9000);
+  expect(reloadedInvoice.subtotalCents).toBe(4500);
+  expect(reloadedInvoice.totalCents).toBe(4500);
 
   const pdfResponse = await request.get(
     `/api/invoices/${fromAppointmentFinalized.id}/pdf?invoiceNumber=${encodeURIComponent(

@@ -21,6 +21,7 @@ import { toInvoiceDTO } from "@/lib/serializers";
 import { invoiceUpdateSchema } from "@/lib/validators";
 
 const paramsSchema = z.object({ id: z.string().min(1) });
+const FINALIZED_DOCUMENT_STATUSES = new Set(["FINAL", "SENT", "CANCELLED"] as const);
 
 const invoiceInclude = {
   items: true,
@@ -164,6 +165,13 @@ function mapUpdateError(error: unknown) {
       error: message.replace("FINALIZE_BLOCKED:", "").replaceAll(" | ", "\n"),
     };
   }
+  if (message === "INVOICE_FINALIZED_LOCKED") {
+    return {
+      status: 409,
+      error:
+        "Finalisierte Rechnungen können inhaltlich nicht mehr geändert werden. Nur der Zahlungsstatus darf angepasst werden.",
+    };
+  }
   if (isInvoiceNumberConflict(error)) {
     return {
       status: 409,
@@ -175,6 +183,216 @@ function mapUpdateError(error: unknown) {
     status: 500,
     error: "Rechnung konnte nicht aktualisiert werden.",
   };
+}
+
+function normalizeComparableText(value: string | null | undefined): string {
+  return (value ?? "").trim();
+}
+
+function isFinalizedInvoiceState(input: {
+  lifecycleStatus: string;
+  documentStatus: string;
+}): boolean {
+  return (
+    input.lifecycleStatus === "FINALISIERT" ||
+    FINALIZED_DOCUMENT_STATUSES.has(
+      input.documentStatus as "FINAL" | "SENT" | "CANCELLED",
+    )
+  );
+}
+
+function isSameDateTime(
+  existingDate: Date | null,
+  incomingDateIso: string | null | undefined,
+): boolean {
+  if (incomingDateIso === undefined) {
+    return true;
+  }
+  if (incomingDateIso === null) {
+    return existingDate === null;
+  }
+  const incomingDate = new Date(incomingDateIso);
+  if (Number.isNaN(incomingDate.getTime())) {
+    return false;
+  }
+  if (!existingDate) {
+    return false;
+  }
+  return existingDate.getTime() === incomingDate.getTime();
+}
+
+function hasLockedLineItemChanges(
+  existingItems: Array<{
+    service: string;
+    quantity: number;
+    unitPriceCents: number;
+  }>,
+  incomingItems: Array<{
+    service: string;
+    quantity: number;
+    unitPriceCents: number;
+  }>,
+): boolean {
+  if (existingItems.length !== incomingItems.length) {
+    return true;
+  }
+
+  return existingItems.some((existingItem, index) => {
+    const incomingItem = incomingItems[index];
+    if (!incomingItem) {
+      return true;
+    }
+    return (
+      normalizeComparableText(existingItem.service) !==
+        normalizeComparableText(incomingItem.service) ||
+      existingItem.quantity !== incomingItem.quantity ||
+      existingItem.unitPriceCents !== incomingItem.unitPriceCents
+    );
+  });
+}
+
+function hasLockedFinalizedContentChanges(
+  invoice: {
+    customerId: string | null;
+    appointmentId: string | null;
+    issueDate: Date;
+    serviceDate: Date | null;
+    paymentMethod: string;
+    smallBusinessEnabled: boolean;
+    legalSmallBusinessNote: string;
+    closingText: string;
+    additionalFooterNote: string;
+    recipientName: string;
+    recipientAttention: string;
+    recipientLine2: string;
+    recipientStreet: string;
+    recipientHouseNumber: string;
+    recipientZipCode: string;
+    recipientCity: string;
+    recipientCountry: string;
+    recipientEmail: string;
+    recipientPhone: string;
+    recipientNotes: string;
+    invoiceNumber: string | null;
+    sequence: number | null;
+    items: Array<{
+      service: string;
+      quantity: number;
+      unitPriceCents: number;
+    }>;
+  },
+  update: z.infer<typeof invoiceUpdateSchema>,
+): boolean {
+  if (update.action !== undefined) return true;
+  if (update.customerId !== undefined && update.customerId !== invoice.customerId) return true;
+  if (update.paymentMethod !== undefined && update.paymentMethod !== invoice.paymentMethod) return true;
+  if (!isSameDateTime(invoice.issueDate, update.issueDate)) return true;
+  if (!isSameDateTime(invoice.serviceDate, update.serviceDate)) return true;
+  if (
+    update.recipientName !== undefined &&
+    normalizeComparableText(update.recipientName) !== normalizeComparableText(invoice.recipientName)
+  ) {
+    return true;
+  }
+  if (
+    update.recipientAttention !== undefined &&
+    normalizeComparableText(update.recipientAttention) !==
+      normalizeComparableText(invoice.recipientAttention)
+  ) {
+    return true;
+  }
+  if (
+    update.recipientLine2 !== undefined &&
+    normalizeComparableText(update.recipientLine2) !== normalizeComparableText(invoice.recipientLine2)
+  ) {
+    return true;
+  }
+  if (
+    update.recipientStreet !== undefined &&
+    normalizeComparableText(update.recipientStreet) !== normalizeComparableText(invoice.recipientStreet)
+  ) {
+    return true;
+  }
+  if (
+    update.recipientHouseNumber !== undefined &&
+    normalizeComparableText(update.recipientHouseNumber) !==
+      normalizeComparableText(invoice.recipientHouseNumber)
+  ) {
+    return true;
+  }
+  if (
+    update.recipientZipCode !== undefined &&
+    normalizeComparableText(update.recipientZipCode) !== normalizeComparableText(invoice.recipientZipCode)
+  ) {
+    return true;
+  }
+  if (
+    update.recipientCity !== undefined &&
+    normalizeComparableText(update.recipientCity) !== normalizeComparableText(invoice.recipientCity)
+  ) {
+    return true;
+  }
+  if (
+    update.recipientCountry !== undefined &&
+    normalizeComparableText(update.recipientCountry) !== normalizeComparableText(invoice.recipientCountry)
+  ) {
+    return true;
+  }
+  if (
+    update.recipientEmail !== undefined &&
+    normalizeComparableText(update.recipientEmail) !== normalizeComparableText(invoice.recipientEmail)
+  ) {
+    return true;
+  }
+  if (
+    update.recipientPhone !== undefined &&
+    normalizeComparableText(update.recipientPhone) !== normalizeComparableText(invoice.recipientPhone)
+  ) {
+    return true;
+  }
+  if (
+    update.recipientNotes !== undefined &&
+    normalizeComparableText(update.recipientNotes) !== normalizeComparableText(invoice.recipientNotes)
+  ) {
+    return true;
+  }
+  if (
+    update.smallBusinessEnabled !== undefined &&
+    update.smallBusinessEnabled !== invoice.smallBusinessEnabled
+  ) {
+    return true;
+  }
+  if (
+    update.legalSmallBusinessNote !== undefined &&
+    normalizeComparableText(update.legalSmallBusinessNote) !==
+      normalizeComparableText(invoice.legalSmallBusinessNote)
+  ) {
+    return true;
+  }
+  if (
+    update.closingText !== undefined &&
+    normalizeComparableText(update.closingText) !== normalizeComparableText(invoice.closingText)
+  ) {
+    return true;
+  }
+  if (
+    update.additionalFooterNote !== undefined &&
+    normalizeComparableText(update.additionalFooterNote) !==
+      normalizeComparableText(invoice.additionalFooterNote)
+  ) {
+    return true;
+  }
+  if (update.items !== undefined) {
+    const incomingItems = update.items.map((item) => ({
+      service: item.service,
+      quantity: item.quantity,
+      unitPriceCents: item.unitPriceCents,
+    }));
+    if (hasLockedLineItemChanges(invoice.items, incomingItems)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export async function GET(
@@ -252,6 +470,13 @@ export async function PUT(
       });
       if (!invoice) {
         throw new Error("INVOICE_NOT_FOUND");
+      }
+
+      if (
+        isFinalizedInvoiceState(invoice) &&
+        hasLockedFinalizedContentChanges(invoice, parsed.data)
+      ) {
+        throw new Error("INVOICE_FINALIZED_LOCKED");
       }
 
       if (parsed.data.deleteDraft) {
