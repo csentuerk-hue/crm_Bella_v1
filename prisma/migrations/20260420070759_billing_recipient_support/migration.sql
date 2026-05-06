@@ -1,0 +1,46 @@
+-- AlterTable
+ALTER TABLE "Customer" ADD COLUMN     "billingAddressEnabled" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "city" TEXT,
+ADD COLUMN     "country" TEXT NOT NULL DEFAULT 'Deutschland',
+ADD COLUMN     "houseNumber" TEXT,
+ADD COLUMN     "invoiceCity" TEXT,
+ADD COLUMN     "invoiceCountry" TEXT NOT NULL DEFAULT 'Deutschland',
+ADD COLUMN     "invoiceEmail" TEXT,
+ADD COLUMN     "invoiceHouseNumber" TEXT,
+ADD COLUMN     "invoiceNotes" TEXT,
+ADD COLUMN     "invoicePhone" TEXT,
+ADD COLUMN     "invoicePostalCode" TEXT,
+ADD COLUMN     "invoiceRecipientAttention" TEXT,
+ADD COLUMN     "invoiceRecipientLine2" TEXT,
+ADD COLUMN     "invoiceRecipientName" TEXT,
+ADD COLUMN     "invoiceStreet" TEXT,
+ADD COLUMN     "postalCode" TEXT,
+ADD COLUMN     "street" TEXT;
+
+-- AlterTable
+ALTER TABLE "Invoice" ADD COLUMN     "recipientAttention" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "recipientCountry" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "recipientEmail" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "recipientLine2" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "recipientNotes" TEXT NOT NULL DEFAULT '',
+ADD COLUMN     "recipientPhone" TEXT NOT NULL DEFAULT '',
+ALTER COLUMN "cardPaymentNote" SET DEFAULT 'Der Betrag wurde per Kartenzahlung beglichen.',
+ALTER COLUMN "cardPaymentTitle" SET DEFAULT 'Zahlungsart: Kartenzahlung',
+ALTER COLUMN "cashPaymentNote" SET DEFAULT 'Der Betrag wurde in bar beglichen.',
+ALTER COLUMN "cashPaymentTitle" SET DEFAULT 'Zahlungsart: Barzahlung',
+ALTER COLUMN "closingText" SET DEFAULT 'Vielen Dank fuer Ihren Besuch!',
+ALTER COLUMN "legalSmallBusinessNote" SET DEFAULT 'Gemaess § 19 UStG wird keine Umsatzsteuer berechnet.',
+ALTER COLUMN "recipientLabel" SET DEFAULT 'Rechnung an:',
+ALTER COLUMN "transferPaymentNotice" SET DEFAULT 'Bitte ueberweisen Sie den Betrag innerhalb von {X} Werktagen.',
+ALTER COLUMN "transferPaymentTitle" SET DEFAULT 'Zahlungsart: Ueberweisung';
+
+-- AlterTable
+ALTER TABLE "InvoiceSettings" ALTER COLUMN "recipientLabel" SET DEFAULT 'Rechnung an:',
+ALTER COLUMN "transferPaymentTitle" SET DEFAULT 'Zahlungsart: Ueberweisung',
+ALTER COLUMN "transferPaymentNotice" SET DEFAULT 'Bitte ueberweisen Sie den Betrag innerhalb von {X} Werktagen.',
+ALTER COLUMN "cashPaymentTitle" SET DEFAULT 'Zahlungsart: Barzahlung',
+ALTER COLUMN "cashPaymentNote" SET DEFAULT 'Der Betrag wurde in bar beglichen.',
+ALTER COLUMN "cardPaymentTitle" SET DEFAULT 'Zahlungsart: Kartenzahlung',
+ALTER COLUMN "cardPaymentNote" SET DEFAULT 'Der Betrag wurde per Kartenzahlung beglichen.',
+ALTER COLUMN "legalSmallBusinessNote" SET DEFAULT 'Gemaess § 19 UStG wird keine Umsatzsteuer berechnet.',
+ALTER COLUMN "closingText" SET DEFAULT 'Vielen Dank fuer Ihren Besuch!';

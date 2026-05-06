@@ -1,0 +1,2 @@
+ALTER TABLE "Invoice"
+ADD COLUMN "customerInitials" TEXT NOT NULL DEFAULT 'XX';

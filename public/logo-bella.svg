@@ -1,0 +1,6 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="120" height="120" rx="28" fill="#F8E8EC"/>
+  <circle cx="60" cy="60" r="34" fill="#FFF9FA" stroke="#0F5A55" stroke-width="4"/>
+  <path d="M45 68C45 53.0883 56.1929 42 70 42C80.4934 42 89 50.5066 89 61C89 70.9411 80.9411 79 71 79H45V68Z" fill="#B76E79" fill-opacity="0.25"/>
+  <text x="60" y="67" text-anchor="middle" fill="#1A3F39" font-size="24" font-family="Georgia, serif" font-weight="700">BS</text>
+</svg>

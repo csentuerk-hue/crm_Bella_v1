@@ -1,0 +1,313 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CASH
+  CARD
+}
+
+enum PaymentStatus {
+  OPEN
+  PAID
+  PARTIALLY_PAID
+  FAILED
+  REFUNDED
+}
+
+enum InvoiceDocumentStatus {
+  DRAFT
+  FINAL
+  SENT
+  CANCELLED
+}
+
+enum InvoiceLifecycleStatus {
+  ENTWURF
+  FINALISIERT
+}
+
+enum CustomerNoteType {
+  GENERAL
+  APPOINTMENT
+  INVOICE
+  CARE
+  WARNING
+}
+
+model Customer {
+  id               String           @id @default(cuid())
+  customerNumber   String?          @unique
+  firstName        String?
+  lastName         String?
+  displayName      String?
+  name             String
+  email            String?
+  phone            String?
+  birthday         DateTime?
+  preferences      String?
+  allergies        String?
+  sensitivities    String?
+  contraindications String?
+  notes            String?
+  source           String?
+  tags             String?
+  street           String?
+  houseNumber      String?
+  postalCode       String?
+  city             String?
+  country          String           @default("Deutschland")
+  billingAddressEnabled    Boolean  @default(false)
+  invoiceRecipientName     String?
+  invoiceRecipientAttention String?
+  invoiceRecipientLine2    String?
+  invoiceStreet            String?
+  invoiceHouseNumber       String?
+  invoicePostalCode        String?
+  invoiceCity              String?
+  invoiceCountry           String   @default("Deutschland")
+  invoiceEmail             String?
+  invoicePhone             String?
+  invoiceNotes             String?
+  mediaConsent     Boolean          @default(false)
+  mediaConsentAt   DateTime?
+  privacyConsent   Boolean          @default(false)
+  privacyConsentAt DateTime?
+  photoUrl         String?
+  status           String           @default("NEU")
+  archived         Boolean          @default(false)
+  appointments     Appointment[]
+  invoices         Invoice[]
+  customerNotes    CustomerNote[]
+  treatmentEntries TreatmentEntry[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model Appointment {
+  id                 String   @id @default(cuid())
+  title              String?
+  startsAt           DateTime
+  endsAt             DateTime?
+  serviceId          String?
+  serviceRef         Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  service            String
+  status             String   @default("OFFEN")
+  staffName          String?
+  roomLabel          String?
+  plannedPriceCents  Int?
+  finalPriceCents    Int?
+  plannedPaymentMethod PaymentMethod?
+  notes              String?
+  priceCents         Int
+  isCancelled        Boolean  @default(false)
+  cancellationReason String?
+  customerId         String
+  customer           Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  invoice            Invoice?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Invoice {
+  id                          String        @id @default(cuid())
+  sequence                    Int?          @unique
+  invoiceNumber               String?       @unique
+  customerInitials            String        @default("XX")
+  issueDate                   DateTime      @default(now())
+  serviceDate                 DateTime?
+  customerNumber              String?
+  amountCents                 Int
+  subtotalCents               Int           @default(0)
+  totalCents                  Int           @default(0)
+  currency                    String        @default("EUR")
+  paymentMethod               PaymentMethod @default(BANK_TRANSFER)
+  paymentStatus               PaymentStatus @default(OPEN)
+  paymentDate                 DateTime?
+  dueDate                     DateTime?
+  paymentDeadlineBusinessDays Int           @default(7)
+  smallBusinessEnabled        Boolean       @default(true)
+  documentStatus              InvoiceDocumentStatus @default(DRAFT)
+  lifecycleStatus             InvoiceLifecycleStatus @default(ENTWURF)
+  status                      String        @default("OFFEN")
+  pdfPath                     String?
+  pdfGeneratedAt              DateTime?
+  customerId                  String?
+  customer                    Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  appointmentId               String?       @unique
+  appointment                 Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  items                       InvoiceItem[]
+  payments                    Payment[]
+
+  senderBusinessName String @default("Bella by Sobiella")
+  senderOwnerName    String @default("")
+  senderStreet       String @default("")
+  senderHouseNumber  String @default("")
+  senderZipCode      String @default("")
+  senderCity         String @default("")
+  senderPhone        String @default("")
+  senderEmail        String @default("")
+  senderTaxNumber    String @default("")
+  senderVatId        String @default("")
+
+  recipientLabel       String @default("Rechnung an:")
+  recipientName        String @default("")
+  recipientAttention   String @default("")
+  recipientLine2       String @default("")
+  recipientStreet      String @default("")
+  recipientHouseNumber String @default("")
+  recipientZipCode     String @default("")
+  recipientCity        String @default("")
+  recipientCountry     String @default("")
+  recipientEmail       String @default("")
+  recipientPhone       String @default("")
+  recipientNotes       String @default("")
+
+  bankAccountHolder String @default("")
+  bankIban          String @default("")
+  bankBic           String @default("")
+  bankName          String @default("")
+
+  transferPaymentTitle   String   @default("Zahlungsart: Überweisung")
+  transferPaymentNotice  String   @default("Zahlungsziel: innerhalb der nächsten {X} Werktage.")
+  cashPaymentTitle       String   @default("Zahlungsart: Barzahlung")
+  cashPaymentNote        String   @default("Der Betrag wurde in bar beglichen.")
+  cardPaymentTitle       String   @default("Zahlungsart: Kartenzahlung")
+  cardPaymentNote        String   @default("Der Betrag wurde per Kartenzahlung beglichen.")
+  legalSmallBusinessNote String   @default("Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.")
+  closingText            String   @default("Vielen Dank für Ihren Besuch!")
+  additionalFooterNote   String   @default("")
+  lastEditedAt           DateTime @default(now())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([customerInitials])
+  @@index([customerId])
+}
+
+model InvoiceItem {
+  id             String   @id @default(cuid())
+  invoiceId      String
+  invoice        Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  serviceId      String?
+  serviceRef     Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  appointmentId  String?
+  title          String?
+  description    String?
+  position       Int
+  service        String
+  quantity       Float    @default(1)
+  unitPriceCents Int
+  totalCents     Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([invoiceId, position])
+}
+
+model InvoiceSettings {
+  id           String @id @default("default")
+  businessName String @default("Bella by Sobiella")
+  ownerName    String @default("")
+  street       String @default("")
+  houseNumber  String @default("")
+  zipCode      String @default("")
+  city         String @default("")
+  phone        String @default("")
+  email        String @default("")
+  taxNumber    String @default("")
+  vatId        String @default("")
+
+  bankAccountHolder String @default("")
+  bankIban          String @default("")
+  bankBic           String @default("")
+  bankName          String @default("")
+
+  smallBusinessEnabled               Boolean       @default(true)
+  defaultPaymentDeadlineBusinessDays Int           @default(7)
+  defaultCurrency                    String        @default("EUR")
+  defaultPaymentMethod               PaymentMethod @default(BANK_TRANSFER)
+  invoicePrefix                      String        @default("BBS")
+
+  recipientLabel         String   @default("Rechnung an:")
+  transferPaymentTitle   String   @default("Zahlungsart: Überweisung")
+  transferPaymentNotice  String   @default("Zahlungsziel: innerhalb der nächsten {X} Werktage.")
+  cashPaymentTitle       String   @default("Zahlungsart: Barzahlung")
+  cashPaymentNote        String   @default("Der Betrag wurde in bar beglichen.")
+  cardPaymentTitle       String   @default("Zahlungsart: Kartenzahlung")
+  cardPaymentNote        String   @default("Der Betrag wurde per Kartenzahlung beglichen.")
+  legalSmallBusinessNote String   @default("Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.")
+  closingText            String   @default("Vielen Dank für Ihren Besuch!")
+  additionalFooterNote   String   @default("")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model Service {
+  id             String        @id @default(cuid())
+  name           String
+  category       String?
+  description    String?
+  defaultPriceCents Int       @default(0)
+  durationMinutes Int         @default(0)
+  isActive       Boolean       @default(true)
+  sortOrder      Int           @default(0)
+  appointments   Appointment[]
+  invoiceItems   InvoiceItem[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model CustomerNote {
+  id          String           @id @default(cuid())
+  customerId  String
+  customer    Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  noteType    CustomerNoteType @default(GENERAL)
+  title       String?
+  content     String
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([customerId, createdAt(sort: Desc)])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  method      PaymentMethod
+  status      PaymentStatus @default(OPEN)
+  amountCents Int
+  paidAt      DateTime?
+  reference   String?
+  note        String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([invoiceId, createdAt(sort: Desc)])
+}
+
+model TreatmentEntry {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  performedAt DateTime
+  treatment   String
+  style       String?
+  technique   String?
+  length      String?
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([customerId, performedAt(sort: Desc)])
+}
+
+

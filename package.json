@@ -1,0 +1,45 @@
+{
+  "name": "bella-crm",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "node scripts/run-prisma-with-env.mjs generate && node scripts/run-prisma-with-env.mjs migrate deploy && next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "db:generate": "node scripts/run-prisma-with-env.mjs generate",
+    "db:init": "node scripts/run-prisma-with-env.mjs migrate deploy",
+    "db:push": "node scripts/run-prisma-with-env.mjs db push",
+    "db:migrate:dev": "node scripts/run-prisma-with-env.mjs migrate dev",
+    "db:migrate:diff": "node scripts/run-prisma-with-env.mjs migrate diff",
+    "db:migrate:deploy": "node scripts/run-prisma-with-env.mjs migrate deploy",
+    "test:e2e": "playwright test",
+    "test:e2e:prod": "playwright test --config=playwright.prod.config.ts",
+    "test:e2e:headed": "playwright test --headed"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.17.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^1.8.0",
+    "next": "16.2.3",
+    "pdf-lib": "^1.17.1",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "recharts": "^3.8.1",
+    "stripe": "^22.0.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.3",
+    "prisma": "^6.17.1",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vercel": "^51.2.1"
+  }
+}
