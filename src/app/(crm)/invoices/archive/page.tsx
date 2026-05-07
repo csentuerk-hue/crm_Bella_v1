@@ -73,7 +73,7 @@ function previewHref(invoice: InvoiceDTO) {
   }
   const suffix = params.toString();
   return suffix
-    ? `/invoices/${invoice.id}/preview${suffix}`
+    ? `/invoices/${invoice.id}/preview?${suffix}`
     : `/invoices/${invoice.id}/preview`;
 }
 
@@ -83,7 +83,7 @@ function pdfHref(invoice: InvoiceDTO) {
     params.set("invoiceNumber", invoice.invoiceNumber);
   }
   params.set("download", "true");
-  return `/api/invoices/${invoice.id}/pdf${params.toString()}`;
+  return `/api/invoices/${invoice.id}/pdf?${params.toString()}`;
 }
 
 export default function InvoiceArchivePage() {
@@ -421,7 +421,7 @@ export default function InvoiceArchivePage() {
                     <Download className="mr-1.5 size-3.5" />
                     PDF exportieren
                   </a>
-                  <Link href={`/invoicesinvoiceId=${invoice.id}`} className="btn-secondary h-8 text-xs">
+                  <Link href={`/invoices?invoiceId=${invoice.id}`} className="btn-secondary h-8 text-xs">
                     Bearbeiten
                   </Link>
                   <label className="ml-auto flex items-center gap-2 text-xs text-slate-600">
