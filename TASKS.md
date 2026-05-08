@@ -5,7 +5,7 @@
 - GitHub repo URL: https://github.com/csentuerk-hue/crm_Bella_v1
 - Current branch: main
 - Working folder: C:\Users\CSent\Desktop\bella-crm-git-check
-- Current Preview URL: https://bella-8fy9goail-csentuerk-7515s-projects.vercel.app
+- Current Preview URL: https://bella-4fxn1tozy-csentuerk-7515s-projects.vercel.app
 - Production deployment has not been intentionally triggered in this workflow.
 - Preview deployments are allowed for visual testing when explicitly requested.
 - Production deployments are forbidden unless explicitly approved.
@@ -261,6 +261,47 @@ Acceptance:
 - 10-minute test script exists
 - known issues separated from blockers
 - only MVP functions included
+
+### WP-INVOICE-02 — Optional invoice discount field (Status: Preview-verifiziert)
+
+Verified Preview URL:
+- https://bella-4fxn1tozy-csentuerk-7515s-projects.vercel.app
+
+Tested routes:
+- /invoices/archive
+- /invoices/cmou4t1qb0014uvm88253hxy7/preview?invoiceNumber=BBS-2026-0063
+- /api/invoices/cmou4t1qb0014uvm88253hxy7/pdf?invoiceNumber=BBS-2026-0063
+
+Screenshots:
+- C:\Users\CSent\AppData\Local\Temp\bella-invoice02-verify2-20260508-190817\archive-desktop.png
+- C:\Users\CSent\AppData\Local\Temp\bella-invoice02-verify2-20260508-190817\archive-tablet.png
+- C:\Users\CSent\AppData\Local\Temp\bella-invoice02-verify2-20260508-190817\invoice-preview-desktop.png
+- C:\Users\CSent\AppData\Local\Temp\bella-invoice02-verify2-20260508-190817\invoice-preview-tablet.png
+
+Verification summary:
+- Deployment status: READY
+- Rabatt row hidden when unused: yes
+- No "Rabatt - 0,00 €" row visible without active discount
+- Amount/totals still visible and consistent
+- Header correct: logo + "Bella by Sobiella"
+- Footer correct: contact/business details, no unnecessary repeated "Bella by Sobiella"
+- /invoices/archive shows PDF status labels:
+  - PDF fehlt
+  - PDF heruntergeladen
+  - PDF gespeichert
+- Actions still exist:
+  - PDF herunterladen
+  - Als gespeichert markieren
+  - Status zurücksetzen
+- Expected filename remains visible
+- PDF route returns 200 with content-type application/pdf
+- No 401/403/404/500 on tested routes
+- No console errors
+- Only non-blocking net::ERR_ABORTED requests on _rsc/iframe navigation observed
+- Git status after verification was clean
+- No commit/push during verification task
+- No stash touched
+- Production not used
 
 ## 8. Do Not Build Yet
 
