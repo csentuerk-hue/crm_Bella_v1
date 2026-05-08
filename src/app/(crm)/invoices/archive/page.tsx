@@ -421,7 +421,7 @@ export default function InvoiceArchivePage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5 overflow-hidden">
-      <PageHeader title="Rechnungsarchiv" actions={<InvoiceAreaSwitch current="archive" />} />
+      <PageHeader title="Archiv" actions={<InvoiceAreaSwitch current="archive" />} />
 
       {notice ? <InlineNotice type={notice.type} text={notice.text} /> : null}
 

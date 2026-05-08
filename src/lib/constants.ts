@@ -42,9 +42,10 @@ export const INVOICE_LIFECYCLE_LABELS: Record<InvoiceLifecycleStatus, string> = 
 };
 
 export const SIDEBAR_ITEMS = [
-  { label: "Dashboard", href: "/dashboard" },
+  { label: "Bella by Sobiella", href: "/dashboard" },
   { label: "Kundinnen", href: "/customers" },
   { label: "Termine", href: "/appointments" },
   { label: "Rechnungen", href: "/invoices" },
+  { label: "Archiv", href: "/invoices/archive" },
   { label: "Einstellungen", href: "/settings" },
 ];

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Archive,
   CalendarClock,
   LayoutDashboard,
   ReceiptText,
@@ -13,10 +14,11 @@ import {
 import { SIDEBAR_ITEMS } from "@/lib/constants";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Dashboard: LayoutDashboard,
+  "Bella by Sobiella": LayoutDashboard,
   Kundinnen: Users,
   Termine: CalendarClock,
   Rechnungen: ReceiptText,
+  Archiv: Archive,
   Einstellungen: Settings,
 };
 
@@ -38,7 +40,7 @@ export function CrmShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
-                data-testid={`sidebar-item-${item.label.toLowerCase()}`}
+                data-testid={`sidebar-item-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
                 aria-label={item.label}
                 title={item.label}
                 className={[

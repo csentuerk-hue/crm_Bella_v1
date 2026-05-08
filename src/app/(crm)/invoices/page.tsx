@@ -982,7 +982,7 @@ export default function InvoicesCreatePage() {
           <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
             <h3 className="font-semibold text-[#1a3f39]">Entwrfe</h3>
             <p className="mt-1 text-sm text-slate-600">
-              Finalisierte Rechnungen findest du im Rechnungsarchiv.
+              Finalisierte Rechnungen findest du im Archiv.
             </p>
             <label className="mt-3 flex flex-col gap-1 text-sm">
               Entwurf bearbeiten
@@ -1008,9 +1008,6 @@ export default function InvoicesCreatePage() {
                 )}
               </select>
             </label>
-            <Link href="/invoices/archive" className="btn-secondary mt-3 h-9 w-full">
-              Zum Rechnungsarchiv
-            </Link>
           </section>
         </aside>
 
