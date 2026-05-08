@@ -214,26 +214,25 @@ export async function buildInvoicePdf({ invoice }: InvoicePdfInput): Promise<Uin
     height: logoHeight,
   });
 
-  const senderLines = layout.senderLines
-    .slice(0, 8)
-    .flatMap((line) => wrapText(line, 280, fontRegular, 9.5));
+  const senderBrandLine = layout.senderLines[0] ?? "Bella by Sobiella";
+  const senderBrandLines = wrapText(senderBrandLine, 280, fontBold, 10.5).slice(0, 2);
 
   drawTextLines({
     page,
-    lines: senderLines,
+    lines: senderBrandLines,
     x: marginX,
     yTop: logoY - 14,
-    lineHeight: 12,
-    size: 9.5,
-    font: fontRegular,
-    color: colors.muted,
+    lineHeight: 13,
+    size: 10.5,
+    font: fontBold,
+    color: colors.accent,
   });
 
   const recipientLines = layout.recipientLines
     .slice(0, 8)
     .flatMap((line) => wrapText(line, recipientWidth - 24, fontRegular, 10));
 
-  const recipientBoxTop = logoY - 14 - senderLines.length * 12 - 18;
+  const recipientBoxTop = logoY - 14 - senderBrandLines.length * 13 - 18;
   const recipientBoxHeight = Math.max(84, recipientLines.length * 12 + 28);
   const recipientBoxY = recipientBoxTop - recipientBoxHeight;
 
@@ -629,7 +628,7 @@ export async function buildInvoicePdf({ invoice }: InvoicePdfInput): Promise<Uin
     color: rgb(colors.border.r, colors.border.g, colors.border.b),
   });
 
-  const footerLines = layout.senderLines.slice(0, 7);
+  const footerLines = layout.senderLines.slice(1, 8);
   drawTextLines({
     page,
     lines: footerLines,

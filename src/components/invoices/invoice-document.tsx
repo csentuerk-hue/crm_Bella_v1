@@ -11,6 +11,8 @@ type Props = {
 
 export function InvoiceDocument({ invoice }: Props) {
   const layout = buildInvoiceLayoutModel(invoice);
+  const senderBrandLine = layout.senderLines[0] ?? "Bella by Sobiella";
+  const footerSenderLines = layout.senderLines.slice(1);
 
   return (
     <article
@@ -37,14 +39,7 @@ export function InvoiceDocument({ invoice }: Props) {
             }}
           />
           <div className="max-w-[280px] text-[13px] leading-5 text-[#514948]">
-            {layout.senderLines.map((line, index) => (
-              <p
-                key={`${line}-${index}`}
-                className={index === 0 ? "font-semibold text-[#a56f56]" : undefined}
-              >
-                {line}
-              </p>
-            ))}
+            <p className="font-semibold text-[#a56f56]">{senderBrandLine}</p>
           </div>
 
           <section
@@ -199,13 +194,8 @@ export function InvoiceDocument({ invoice }: Props) {
       <footer className="mt-8 border-t border-[#e9e0dc] pt-4">
         <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_220px]">
           <div className="grid gap-y-1 text-[12px] leading-5 text-[#5a514f] md:grid-cols-2 md:gap-x-10">
-            {layout.senderLines.map((line, index) => (
-              <p
-                key={`footer-${line}-${index}`}
-                className={index === 0 ? "font-semibold text-[#b17961] md:col-span-2" : undefined}
-              >
-                {line}
-              </p>
+            {footerSenderLines.map((line, index) => (
+              <p key={`footer-${line}-${index}`}>{line}</p>
             ))}
           </div>
           <div className="space-y-2 text-right">
