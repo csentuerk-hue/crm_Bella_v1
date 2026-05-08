@@ -535,8 +535,10 @@ export async function buildInvoicePdf({ invoice }: InvoicePdfInput): Promise<Uin
 
   const totalsX = marginX + contentWidth - totalsWidth;
   const totalsTop = infoTop;
-  const totalsHeight = 132;
+  const totalsHeight = layout.showDiscount ? 132 : 112;
   const totalsY = totalsTop - totalsHeight;
+  const totalBandY = layout.showDiscount ? totalsTop - 78 : totalsTop - 58;
+  const payableHintY = layout.showDiscount ? totalsTop - 102 : totalsTop - 82;
 
   page.drawRectangle({
     x: totalsX,
@@ -565,26 +567,28 @@ export async function buildInvoicePdf({ invoice }: InvoicePdfInput): Promise<Uin
     color: colors.text,
   });
 
-  page.drawText("Rabatt", {
-    x: totalsX + 12,
-    y: totalsTop - 38,
-    size: 9.8,
-    font: fontRegular,
-    color: rgb(colors.text.r, colors.text.g, colors.text.b),
-  });
-  drawRightAligned({
-    page,
-    text: layout.discountDisplay,
-    rightX: totalsX + totalsWidth - 12,
-    y: totalsTop - 38,
-    size: 9.8,
-    font: fontRegular,
-    color: colors.text,
-  });
+  if (layout.showDiscount) {
+    page.drawText("Rabatt", {
+      x: totalsX + 12,
+      y: totalsTop - 38,
+      size: 9.8,
+      font: fontRegular,
+      color: rgb(colors.text.r, colors.text.g, colors.text.b),
+    });
+    drawRightAligned({
+      page,
+      text: layout.discountDisplay,
+      rightX: totalsX + totalsWidth - 12,
+      y: totalsTop - 38,
+      size: 9.8,
+      font: fontRegular,
+      color: colors.text,
+    });
+  }
 
   page.drawRectangle({
     x: totalsX,
-    y: totalsTop - 78,
+    y: totalBandY,
     width: totalsWidth,
     height: 34,
     color: rgb(colors.highlight.r, colors.highlight.g, colors.highlight.b),
@@ -594,7 +598,7 @@ export async function buildInvoicePdf({ invoice }: InvoicePdfInput): Promise<Uin
 
   page.drawText("Gesamtbetrag", {
     x: totalsX + 12,
-    y: totalsTop - 65,
+    y: totalBandY + 13,
     size: 11.6,
     font: fontBold,
     color: rgb(0.33, 0.2, 0.19),
@@ -604,7 +608,7 @@ export async function buildInvoicePdf({ invoice }: InvoicePdfInput): Promise<Uin
     page,
     text: layout.totalDisplay,
     rightX: totalsX + totalsWidth - 12,
-    y: totalsTop - 67,
+    y: totalBandY + 11,
     size: 15,
     font: fontBold,
     color: { r: 0.33, g: 0.2, b: 0.19 },
@@ -614,7 +618,7 @@ export async function buildInvoicePdf({ invoice }: InvoicePdfInput): Promise<Uin
     page,
     text: layout.payableHint,
     rightX: totalsX + totalsWidth - 12,
-    y: totalsTop - 102,
+    y: payableHintY,
     size: 9.2,
     font: fontRegular,
     color: colors.muted,

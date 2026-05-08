@@ -33,6 +33,7 @@ export type InvoiceLayoutModel = {
   totalCents: number;
   subtotalDisplay: string;
   discountDisplay: string;
+  showDiscount: boolean;
   totalDisplay: string;
   payableHint: string;
   payment: InvoiceLayoutPayment;
@@ -205,8 +206,13 @@ export function buildInvoiceLayoutModel(invoice: InvoiceDTO): InvoiceLayoutModel
   const recipientName = compact(invoice.recipientName) || compact(invoice.customerName) || "Laufkundin";
   const items = deriveInvoiceItemsWithTotals(invoice);
   const subtotalCents = items.reduce((sum, item) => sum + item.totalCents, 0);
-  const discountCents = Math.max(0, subtotalCents - Math.max(invoice.totalCents, 0));
-  const totalCents = subtotalCents;
+  const persistedTotalCents = Math.max(invoice.totalCents, 0);
+  const hasPersistedDiscount =
+    persistedTotalCents > 0 && persistedTotalCents < subtotalCents;
+  const discountCents = hasPersistedDiscount
+    ? subtotalCents - persistedTotalCents
+    : 0;
+  const totalCents = hasPersistedDiscount ? persistedTotalCents : subtotalCents;
   const payment = buildPaymentBlock(invoice);
   const legalNote = invoice.smallBusinessEnabled
     ? normalizeInvoiceTextValue(
@@ -273,6 +279,7 @@ export function buildInvoiceLayoutModel(invoice: InvoiceDTO): InvoiceLayoutModel
     totalCents,
     subtotalDisplay: formatEuroFromCents(subtotalCents),
     discountDisplay: `- ${formatEuroFromCents(discountCents)}`,
+    showDiscount: discountCents > 0,
     totalDisplay: formatEuroFromCents(totalCents),
     payableHint,
     payment,

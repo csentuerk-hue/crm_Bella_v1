@@ -178,10 +178,12 @@ export function InvoiceDocument({ invoice }: Props) {
               <span>Zwischensumme</span>
               <span className="tabular-nums">{layout.subtotalDisplay}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <span>Rabatt</span>
-              <span className="tabular-nums">{layout.discountDisplay}</span>
-            </div>
+            {layout.showDiscount ? (
+              <div className="flex items-center justify-between">
+                <span>Rabatt</span>
+                <span className="tabular-nums">{layout.discountDisplay}</span>
+              </div>
+            ) : null}
           </div>
           <div className="flex items-center justify-between border-y border-[#e4d2cb] bg-[#f7ebe6] px-4 py-3 text-[#4f2e2c]">
             <span className="text-[20px] font-semibold">Gesamtbetrag</span>
