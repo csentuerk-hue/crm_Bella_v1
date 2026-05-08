@@ -12,6 +12,11 @@ import { INVOICE_LIFECYCLE_LABELS } from "@/lib/constants";
 import { formatEuroFromCents } from "@/lib/currency";
 import { formatDate } from "@/lib/datetime";
 import {
+  buildExpectedInvoicePdfFileName,
+  deriveInvoicePdfStatus,
+  type InvoicePdfStatus,
+} from "@/lib/invoice-pdf";
+import {
   TEST_INVOICE_ACTION_LABEL,
   TEST_INVOICE_CONFIRMATION_TEXT,
 } from "@/lib/test-invoice-cleanup";
@@ -19,6 +24,7 @@ import type { InvoiceDTO, InvoiceLifecycleStatus, PaymentStatus } from "@/types/
 
 type LifecycleFilter = "ALL" | InvoiceLifecycleStatus;
 type PaymentFilter = "ALL" | "OPEN" | "PAID";
+type PdfFilter = "ALL" | "MISSING" | "DOWNLOADED" | "SAVED";
 
 type InvoiceCleanupCandidate = {
   id: string;
@@ -62,8 +68,55 @@ const paymentFilters: Array<{ value: PaymentFilter; label: string }> = [
   { value: "PAID", label: "Bezahlt" },
 ];
 
+const pdfFilters: Array<{ value: PdfFilter; label: string }> = [
+  { value: "ALL", label: "Alle PDF-Status" },
+  { value: "MISSING", label: "PDF fehlt" },
+  { value: "DOWNLOADED", label: "PDF heruntergeladen" },
+  { value: "SAVED", label: "PDF gespeichert" },
+];
+
 function toPaymentStatusLabel(status: PaymentStatus): string {
   return status === "PAID" ? "bezahlt" : "offen";
+}
+
+function toPdfStatusLabel(status: InvoicePdfStatus): string {
+  if (status === "SAVED") {
+    return "PDF gespeichert";
+  }
+  if (status === "DOWNLOADED") {
+    return "PDF heruntergeladen";
+  }
+  return "PDF fehlt";
+}
+
+function toPdfStatusBadgeClasses(status: InvoicePdfStatus): string {
+  if (status === "SAVED") {
+    return "border-[#cde5d7] bg-[#eef9f2] text-[#2f6a49]";
+  }
+  if (status === "DOWNLOADED") {
+    return "border-[#d8e3f5] bg-[#f2f7ff] text-[#35527a]";
+  }
+  return "border-[#f2d5c7] bg-[#fff4ee] text-[#8a5134]";
+}
+
+function toPdfStatus(invoice: InvoiceDTO): InvoicePdfStatus {
+  return deriveInvoicePdfStatus({
+    pdfDownloadedAt: invoice.pdfDownloadedAt,
+    pdfMarkedSavedAt: invoice.pdfMarkedSavedAt,
+  });
+}
+
+function resolveExpectedPdfFileName(invoice: InvoiceDTO): string {
+  return (
+    invoice.pdfFileName ??
+    buildExpectedInvoicePdfFileName({
+      invoiceNumber: invoice.invoiceNumber,
+      recipientName: invoice.recipientName,
+      customerName: invoice.customerName,
+      issueDate: invoice.issueDate,
+      serviceDate: invoice.serviceDate,
+    })
+  );
 }
 
 function previewHref(invoice: InvoiceDTO) {
@@ -90,8 +143,10 @@ export default function InvoiceArchivePage() {
   const [invoices, setInvoices] = useState<InvoiceDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
+  const [updatingPdfInvoiceId, setUpdatingPdfInvoiceId] = useState<string | null>(null);
   const [lifecycleFilter, setLifecycleFilter] = useState<LifecycleFilter>("FINALISIERT");
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>("ALL");
+  const [pdfFilter, setPdfFilter] = useState<PdfFilter>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -166,6 +221,76 @@ export default function InvoiceArchivePage() {
       });
     } finally {
       setUpdatingPaymentId(null);
+    }
+  };
+
+  const updatePdfStatus = async (
+    invoice: InvoiceDTO,
+    action: "MARK_DOWNLOADED" | "MARK_SAVED" | "RESET",
+    successMessage: string,
+  ) => {
+    try {
+      setUpdatingPdfInvoiceId(invoice.id);
+      const updated = await apiRequest<InvoiceDTO>(
+        `/api/invoices/${invoice.id}/pdf-status`,
+        {
+          method: "PATCH",
+          body: { action },
+        },
+      );
+      setInvoices((current) =>
+        current.map((entry) => (entry.id === invoice.id ? updated : entry)),
+      );
+      setNotice({ type: "success", text: successMessage });
+    } catch (error) {
+      setNotice({
+        type: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "PDF-Unterlagenstatus konnte nicht aktualisiert werden.",
+      });
+    } finally {
+      setUpdatingPdfInvoiceId(null);
+    }
+  };
+
+  const triggerPdfDownload = async (invoice: InvoiceDTO) => {
+    try {
+      setUpdatingPdfInvoiceId(invoice.id);
+      const updated = await apiRequest<InvoiceDTO>(
+        `/api/invoices/${invoice.id}/pdf-status`,
+        {
+          method: "PATCH",
+          body: { action: "MARK_DOWNLOADED" },
+        },
+      );
+      setInvoices((current) =>
+        current.map((entry) => (entry.id === invoice.id ? updated : entry)),
+      );
+
+      const link = document.createElement("a");
+      link.href = pdfHref(updated);
+      link.target = "_blank";
+      link.rel = "noreferrer";
+      document.body.append(link);
+      link.click();
+      link.remove();
+
+      setNotice({
+        type: "info",
+        text: "PDF-Download gestartet. Nach lokaler Ablage bitte 'Als gespeichert markieren'.",
+      });
+    } catch (error) {
+      setNotice({
+        type: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "PDF konnte nicht heruntergeladen werden.",
+      });
+    } finally {
+      setUpdatingPdfInvoiceId(null);
     }
   };
 
@@ -247,6 +372,13 @@ export default function InvoiceArchivePage() {
     [invoices],
   );
 
+  const filteredInvoices = useMemo(() => {
+    if (pdfFilter === "ALL") {
+      return invoices;
+    }
+    return invoices.filter((invoice) => toPdfStatus(invoice) === pdfFilter);
+  }, [invoices, pdfFilter]);
+
   const exportCsv = () => {
     if (invoices.length === 0) {
       setNotice({ type: "info", text: "Keine Rechnungen für den CSV-Export vorhanden." });
@@ -326,6 +458,17 @@ export default function InvoiceArchivePage() {
               </option>
             ))}
           </select>
+          <select
+            className="input-base h-9"
+            value={pdfFilter}
+            onChange={(event) => setPdfFilter(event.target.value as PdfFilter)}
+          >
+            {pdfFilters.map((filter) => (
+              <option key={filter.value} value={filter.value}>
+                {filter.label}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             className="btn-secondary h-9"
@@ -380,70 +523,131 @@ export default function InvoiceArchivePage() {
         <div className="mt-4 min-h-0 flex-1 space-y-2 overflow-auto pr-1">
           {loading ? (
             <p className="text-sm text-slate-500">Rechnungsarchiv wird geladen ...</p>
-          ) : invoices.length === 0 ? (
-            <p className="text-sm text-slate-500">Keine Rechnungen im Archiv gefunden.</p>
+          ) : filteredInvoices.length === 0 ? (
+            <p className="text-sm text-slate-500">Keine Rechnungen für den gewählten PDF-Status gefunden.</p>
           ) : (
-            invoices.map((invoice) => (
-              <article
-                key={invoice.id}
-                className="rounded-2xl border border-[#e2e9e6] bg-[#fdfefe] p-3"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="font-semibold text-slate-800">
-                      {invoice.invoiceNumber ?? "Entwurf"}
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      {invoice.customerName || invoice.recipientName || "Ohne Empfänger"}
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="rounded-full border border-[#d7e6e1] bg-[#f4faf7] px-2 py-0.5 text-[#2f5f56]">
-                        {INVOICE_LIFECYCLE_LABELS[invoice.lifecycleStatus]}
-                      </span>
-                      <span className="rounded-full border border-[#e5dfeb] bg-[#fbf8ff] px-2 py-0.5 text-[#5a476f]">
-                        Zahlung: {toPaymentStatusLabel(invoice.paymentStatus)}
-                      </span>
-                      <span className="text-slate-500">{formatDate(invoice.issueDate)}</span>
-                      <span className="text-slate-500">Aktualisiert: {formatDate(invoice.updatedAt)}</span>
-                    </div>
-                  </div>
-                  <p className="text-base font-semibold text-[#8d4d5a]">
-                    {formatEuroFromCents(invoice.totalCents)}
-                  </p>
-                </div>
+            filteredInvoices.map((invoice) => {
+              const pdfStatus = toPdfStatus(invoice);
+              const expectedPdfFileName = resolveExpectedPdfFileName(invoice);
+              const pdfActionDisabled = updatingPdfInvoiceId === invoice.id;
 
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Link href={previewHref(invoice)} className="btn-secondary h-8 text-xs">
-                    <Eye className="mr-1.5 size-3.5" />
-                    Vorschau
-                  </Link>
-                  <a href={pdfHref(invoice)} className="btn-secondary h-8 text-xs">
-                    <Download className="mr-1.5 size-3.5" />
-                    PDF exportieren
-                  </a>
-                  <Link href={`/invoices?invoiceId=${invoice.id}`} className="btn-secondary h-8 text-xs">
-                    Bearbeiten
-                  </Link>
-                  <label className="ml-auto flex items-center gap-2 text-xs text-slate-600">
-                    Zahlungsstatus
-                    <select
-                      className="input-base h-8 min-w-[120px] text-xs"
-                      value={invoice.paymentStatus}
-                      onChange={(event) =>
-                        void updatePaymentStatus(
-                          invoice.id,
-                          event.target.value as PaymentStatus,
-                        )
-                      }
-                      disabled={updatingPaymentId === invoice.id}
+              return (
+                <article
+                  key={invoice.id}
+                  className="rounded-2xl border border-[#e2e9e6] bg-[#fdfefe] p-3"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-800">
+                        {invoice.invoiceNumber ?? "Entwurf"}
+                      </p>
+                      <p className="text-sm text-slate-600">
+                        {invoice.customerName || invoice.recipientName || "Ohne Empfänger"}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="rounded-full border border-[#d7e6e1] bg-[#f4faf7] px-2 py-0.5 text-[#2f5f56]">
+                          {INVOICE_LIFECYCLE_LABELS[invoice.lifecycleStatus]}
+                        </span>
+                        <span className="rounded-full border border-[#e5dfeb] bg-[#fbf8ff] px-2 py-0.5 text-[#5a476f]">
+                          Zahlung: {toPaymentStatusLabel(invoice.paymentStatus)}
+                        </span>
+                        <span
+                          className={`rounded-full border px-2 py-0.5 ${toPdfStatusBadgeClasses(pdfStatus)}`}
+                        >
+                          {toPdfStatusLabel(pdfStatus)}
+                        </span>
+                        <span className="text-slate-500">{formatDate(invoice.issueDate)}</span>
+                        <span className="text-slate-500">
+                          Aktualisiert: {formatDate(invoice.updatedAt)}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-base font-semibold text-[#8d4d5a]">
+                      {formatEuroFromCents(invoice.totalCents)}
+                    </p>
+                  </div>
+
+                  <section className="mt-3 rounded-xl border border-[#e6edea] bg-white px-3 py-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#5f7b73]">
+                      PDF-Ablage / Unterlagenstatus
+                    </p>
+                    <p className="mt-1 text-xs text-slate-600">
+                      Erwarteter Dateiname:{" "}
+                      <span className="font-medium text-slate-700">{expectedPdfFileName}</span>
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        className="btn-secondary h-8 text-xs"
+                        onClick={() => void triggerPdfDownload(invoice)}
+                        disabled={pdfActionDisabled}
+                      >
+                        <Download className="mr-1.5 size-3.5" />
+                        PDF herunterladen
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary h-8 text-xs"
+                        onClick={() =>
+                          void updatePdfStatus(
+                            invoice,
+                            "MARK_SAVED",
+                            "PDF wurde als lokal gespeichert markiert.",
+                          )
+                        }
+                        disabled={pdfActionDisabled}
+                      >
+                        Als gespeichert markieren
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-secondary h-8 text-xs"
+                        onClick={() =>
+                          void updatePdfStatus(
+                            invoice,
+                            "RESET",
+                            "PDF-Unterlagenstatus wurde zurückgesetzt.",
+                          )
+                        }
+                        disabled={pdfActionDisabled}
+                      >
+                        Status zurücksetzen
+                      </button>
+                    </div>
+                  </section>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Link href={previewHref(invoice)} className="btn-secondary h-8 text-xs">
+                      <Eye className="mr-1.5 size-3.5" />
+                      Vorschau
+                    </Link>
+                    <Link
+                      href={`/invoices?invoiceId=${invoice.id}`}
+                      className="btn-secondary h-8 text-xs"
                     >
-                      <option value="OPEN">offen</option>
-                      <option value="PAID">bezahlt</option>
-                    </select>
-                  </label>
-                </div>
-              </article>
-            ))
+                      Bearbeiten
+                    </Link>
+                    <label className="ml-auto flex items-center gap-2 text-xs text-slate-600">
+                      Zahlungsstatus
+                      <select
+                        className="input-base h-8 min-w-[120px] text-xs"
+                        value={invoice.paymentStatus}
+                        onChange={(event) =>
+                          void updatePaymentStatus(
+                            invoice.id,
+                            event.target.value as PaymentStatus,
+                          )
+                        }
+                        disabled={updatingPaymentId === invoice.id}
+                      >
+                        <option value="OPEN">offen</option>
+                        <option value="PAID">bezahlt</option>
+                      </select>
+                    </label>
+                  </div>
+                </article>
+              );
+            })
           )}
         </div>
       </section>

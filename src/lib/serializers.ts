@@ -230,6 +230,13 @@ export function toInvoiceDTO(
     status: invoice.status as InvoiceStatus,
     pdfPath: invoice.pdfPath,
     pdfGeneratedAt: invoice.pdfGeneratedAt ? invoice.pdfGeneratedAt.toISOString() : null,
+    pdfDownloadedAt: invoice.pdfDownloadedAt
+      ? invoice.pdfDownloadedAt.toISOString()
+      : null,
+    pdfMarkedSavedAt: invoice.pdfMarkedSavedAt
+      ? invoice.pdfMarkedSavedAt.toISOString()
+      : null,
+    pdfFileName: invoice.pdfFileName,
     appointmentId: invoice.appointmentId,
     appointmentService,
     appointmentDate,

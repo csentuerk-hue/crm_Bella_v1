@@ -139,6 +139,9 @@ model Invoice {
   status                      String        @default("OFFEN")
   pdfPath                     String?
   pdfGeneratedAt              DateTime?
+  pdfDownloadedAt             DateTime?
+  pdfMarkedSavedAt            DateTime?
+  pdfFileName                 String?
   customerId                  String?
   customer                    Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
   appointmentId               String?       @unique

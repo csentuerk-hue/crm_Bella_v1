@@ -9,6 +9,7 @@ import { InvoiceDocument } from "@/components/invoices/invoice-document";
 import { InlineNotice } from "@/components/inline-notice";
 import { PageHeader } from "@/components/page-header";
 import { apiRequest } from "@/lib/client-api";
+import { buildExpectedInvoicePdfFileName } from "@/lib/invoice-pdf";
 import type { InvoiceDTO } from "@/types/crm";
 
 export default function InvoicePreviewPage() {
@@ -66,8 +67,21 @@ export default function InvoicePreviewPage() {
     return `/api/invoices/${invoiceId}/pdf?${query.toString()}`;
   }, [invoice?.updatedAt, invoiceId, invoiceNumberHint]);
 
+  const expectedPdfFileName = useMemo(() => {
+    if (!invoice) {
+      return "BBS-Rechnung.pdf";
+    }
+    return buildExpectedInvoicePdfFileName({
+      invoiceNumber: invoice.invoiceNumber,
+      recipientName: invoice.recipientName,
+      customerName: invoice.customerName,
+      issueDate: invoice.issueDate,
+      serviceDate: invoice.serviceDate,
+    });
+  }, [invoice]);
+
   return (
-    <div className="space-y-5">
+    <div className="flex h-full min-h-0 flex-col gap-5 overflow-hidden">
       <PageHeader
         title="Rechnungsvorschau"
         actions={
@@ -86,7 +100,7 @@ export default function InvoicePreviewPage() {
       ) : null}
 
       {invoice ? (
-        <>
+        <div className="min-h-0 flex-1 space-y-4 overflow-auto pr-1">
           <InvoiceDocument invoice={invoice} />
 
           <section className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
@@ -98,7 +112,7 @@ export default function InvoicePreviewPage() {
                 </a>
                 <a
                   href={downloadPdfUrl}
-                  download={`${invoice.invoiceNumber ?? "rechnung-entwurf"}.pdf`}
+                  download={expectedPdfFileName}
                   className="btn-primary"
                 >
                   <Download className="mr-2 size-4" />
@@ -109,10 +123,10 @@ export default function InvoicePreviewPage() {
             <iframe
               src={pdfUrl}
               title={`Rechnung ${invoice.invoiceNumber ?? "Entwurf"}`}
-              className="h-[78vh] w-full rounded-2xl border border-slate-200"
+              className="h-[56vh] w-full rounded-2xl border border-slate-200 md:h-[60vh] lg:h-[68vh]"
             />
           </section>
-        </>
+        </div>
       ) : null}
     </div>
   );

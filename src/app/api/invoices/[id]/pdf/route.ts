@@ -4,6 +4,7 @@ import { z } from "zod";
 import { reconcileAppointmentInvoiceConsistency } from "@/lib/data-consistency";
 import { resolveInvoiceByIdentifier } from "@/lib/invoice-query";
 import { getOrCreateInvoiceSettings } from "@/lib/invoice-settings";
+import { buildExpectedInvoicePdfFileName } from "@/lib/invoice-pdf";
 import { applyInvoiceSettingsFallback } from "@/lib/invoice-view";
 import { buildInvoicePdf } from "@/lib/pdf";
 import { requirePermission } from "@/lib/permissions";
@@ -11,10 +12,6 @@ import { ensureDatabaseInitialized, prisma } from "@/lib/prisma";
 import { toInvoiceDTO } from "@/lib/serializers";
 
 const paramsSchema = z.object({ id: z.string().min(1) });
-
-function resolveInvoiceFileName(invoiceNumber: string | null): string {
-  return invoiceNumber?.trim() || "rechnung-entwurf";
-}
 
 export async function GET(
   request: NextRequest,
@@ -51,12 +48,18 @@ export async function GET(
     });
 
     const shouldDownload = request.nextUrl.searchParams.get("download") === "true";
-    const fileName = resolveInvoiceFileName(invoiceDto.invoiceNumber);
+    const fileName = buildExpectedInvoicePdfFileName({
+      invoiceNumber: invoiceDto.invoiceNumber,
+      recipientName: invoiceDto.recipientName,
+      customerName: invoiceDto.customerName,
+      issueDate: invoiceDto.issueDate,
+      serviceDate: invoiceDto.serviceDate,
+    });
 
     return new NextResponse(new Uint8Array(pdfBytes), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `${shouldDownload ? "attachment" : "inline"}; filename=\"${fileName}.pdf\"`,
+        "Content-Disposition": `${shouldDownload ? "attachment" : "inline"}; filename=\"${fileName}\"`,
         "Cache-Control": "no-store",
         Pragma: "no-cache",
         Expires: "0",

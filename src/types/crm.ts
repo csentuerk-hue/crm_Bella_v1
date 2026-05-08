@@ -159,6 +159,9 @@ export type InvoiceDTO = {
   status: InvoiceStatus;
   pdfPath: string | null;
   pdfGeneratedAt: string | null;
+  pdfDownloadedAt: string | null;
+  pdfMarkedSavedAt: string | null;
+  pdfFileName: string | null;
   appointmentId: string | null;
   appointmentService: string | null;
   appointmentDate: string | null;

@@ -52,3 +52,19 @@ Wenn Kleinunternehmerregelung aktiv ist:
 - Rechnungsnummernvergabe transaktionssicher machen.
 - Race-prone `max(sequence)+1`-Ansätze vermeiden.
 - Optional: dediziertes Counter-/Sequence-Modell für parallele Finalisierung.
+
+## Invoice Status Felder – aktueller Stand und Konsolidierungshinweis
+- `documentStatus` steuert den Dokumentzustand auf Belegebene (`DRAFT`, `FINAL`, `SENT`, `CANCELLED`).
+  In der Update-Logik wird bei Finalisierung auf `FINAL` gesetzt, bei Entwurf auf `DRAFT`.
+- `lifecycleStatus` steuert den Bearbeitungs-/Ablaufstatus (`ENTWURF`, `FINALISIERT`).
+  Dieses Feld wird aktiv für Filter in Listen/Archiv genutzt und bei Finalisierung auf `FINALISIERT` gesetzt.
+- Das einfache Feld `status` ist aktuell ein Legacy-Zahlungsanzeigestatus (`OFFEN`/`BEZAHLT`) und wird aus `paymentStatus` abgeleitet.
+  Es beschreibt nicht den Dokument-Lifecycle.
+
+Aktueller kanonischer Prüfpunkt für „ist die Rechnung finalisiert“ im Code:
+- In `src/app/api/invoices/[id]/route.ts` gilt eine Rechnung als finalisiert, wenn
+  `lifecycleStatus === FINALISIERT` **oder** `documentStatus` in `FINAL|SENT|CANCELLED` ist.
+
+Hinweis zur Zukunft:
+- Die drei Statusfelder sollten perspektivisch konsolidiert bzw. sauber voneinander abgeleitet werden,
+  damit kein Status-Drift entsteht. Diese Konsolidierung ist **nicht** Teil des aktuellen Tasks.
