@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Eye, FilePlus2, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Eye, FilePlus2, Plus, Trash2 } from "lucide-react";
 
 import { InvoiceAreaSwitch } from "@/components/invoices/invoice-area-switch";
 import { InlineNotice } from "@/components/inline-notice";
@@ -214,6 +214,26 @@ function formatDraftLabel(invoice: InvoiceDTO) {
   return `${invoice.invoiceNumber ?? "Entwurf"} · ${invoice.customerName}`;
 }
 
+function buildInvoicePreviewHref(invoice: InvoiceDTO): string {
+  const params = new URLSearchParams();
+  if (invoice.invoiceNumber) {
+    params.set("invoiceNumber", invoice.invoiceNumber);
+  }
+  const suffix = params.toString();
+  return suffix
+    ? `/invoices/${invoice.id}/preview?${suffix}`
+    : `/invoices/${invoice.id}/preview`;
+}
+
+function buildInvoicePdfHref(invoice: InvoiceDTO): string {
+  const params = new URLSearchParams();
+  if (invoice.invoiceNumber) {
+    params.set("invoiceNumber", invoice.invoiceNumber);
+  }
+  params.set("download", "true");
+  return `/api/invoices/${invoice.id}/pdf?${params.toString()}`;
+}
+
 export default function InvoicesCreatePage() {
   const [requestedInvoiceId, setRequestedInvoiceId] = useState<string | null>(null);
 
@@ -260,6 +280,7 @@ export default function InvoicesCreatePage() {
     () => editableInvoices.find((invoice) => invoice.id === selectedInvoiceId) ?? null,
     [editableInvoices, selectedInvoiceId],
   );
+  const isSelectedInvoiceFinalized = selectedInvoice?.lifecycleStatus === "FINALISIERT";
 
   const selectedCreateCustomer = useMemo(
     () => customers.find((customer) => customer.id === createCustomerId) ?? null,
@@ -390,7 +411,7 @@ export default function InvoicesCreatePage() {
         if (requestedInvoiceId && fetchedExternal && fetchedExternal.lifecycleStatus === "FINALISIERT") {
           return {
             type: "info",
-            text: "Finalisierte Rechnung aus dem Archiv ist zum Bearbeiten geöffnet.",
+            text: "Finalisierte Rechnung aus dem Archiv ist im Lesemodus geöffnet.",
           };
         }
         return current;
@@ -634,6 +655,13 @@ export default function InvoicesCreatePage() {
 
   const persistInvoice = async (action: "SAVE_DRAFT" | "FINALIZE") => {
     if (!selectedInvoice || !editor) {
+      return;
+    }
+    if (selectedInvoice.lifecycleStatus !== "ENTWURF") {
+      setNotice({
+        type: "info",
+        text: "Diese Rechnung ist finalisiert und kann nicht mehr bearbeitet werden.",
+      });
       return;
     }
     if (!editor.customerId) {
@@ -1040,9 +1068,16 @@ export default function InvoicesCreatePage() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Link href={`/invoices/${selectedInvoice.id}/preview`} className="btn-secondary h-9">
+                  <Link href={buildInvoicePreviewHref(selectedInvoice)} className="btn-secondary h-9">
                     <Eye className="mr-2 size-4" />
                     Vorschau
+                  </Link>
+                  <Link href={buildInvoicePdfHref(selectedInvoice)} className="btn-secondary h-9">
+                    <Download className="mr-2 size-4" />
+                    PDF herunterladen
+                  </Link>
+                  <Link href="/invoices/archive" className="btn-secondary h-9">
+                    Zum Archiv
                   </Link>
                   {selectedInvoice.lifecycleStatus === "ENTWURF" && (
                     <button
@@ -1058,6 +1093,13 @@ export default function InvoicesCreatePage() {
                 </div>
               </header>
 
+              {isSelectedInvoiceFinalized ? (
+                <div className="rounded-xl border border-[#f1d4c4] bg-[#fff4ec] px-3 py-2 text-sm text-[#7a4a2a]">
+                  Diese Rechnung ist finalisiert und kann nicht mehr bearbeitet werden.
+                </div>
+              ) : null}
+
+              <fieldset disabled={isSelectedInvoiceFinalized} className="space-y-4">
               <section className="grid gap-3 lg:grid-cols-2">
                 <label className="flex flex-col gap-1 text-sm">
                   Kundin
@@ -1423,32 +1465,35 @@ export default function InvoicesCreatePage() {
                   />
                 </label>
               </section>
+              </fieldset>
 
               <footer className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#dcebe6] bg-[#f8fcfa] p-3">
                 <p className="text-sm text-slate-600">
-                  {selectedInvoice.lifecycleStatus === "ENTWURF"
-                    ? "Entwurf kann gespeichert, finalisiert oder gelöscht werden."
-                    : "Finalisierte Rechnung bleibt editierbar; PDF wird bei Änderungen neu erzeugt."}
+                  {isSelectedInvoiceFinalized
+                    ? "Finalisierte Rechnung ist im Lesemodus geöffnet."
+                    : "Entwurf kann gespeichert, finalisiert oder gelöscht werden."}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="btn-secondary h-9"
-                    onClick={() => void persistInvoice("SAVE_DRAFT")}
-                    disabled={saving}
-                  >
-                    Entwurf speichern
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-primary h-9"
-                    onClick={() => void persistInvoice("FINALIZE")}
-                    disabled={saving}
-                  >
-                    <CheckCircle2 className="mr-2 size-4" />
-                    Finalisieren
-                  </button>
-                </div>
+                {!isSelectedInvoiceFinalized ? (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="btn-secondary h-9"
+                      onClick={() => void persistInvoice("SAVE_DRAFT")}
+                      disabled={saving}
+                    >
+                      Entwurf speichern
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary h-9"
+                      onClick={() => void persistInvoice("FINALIZE")}
+                      disabled={saving}
+                    >
+                      <CheckCircle2 className="mr-2 size-4" />
+                      Finalisieren
+                    </button>
+                  </div>
+                ) : null}
               </footer>
             </div>
           )}
