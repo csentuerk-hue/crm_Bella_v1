@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -1858,7 +1858,10 @@ const mediaConsentBadge = (allowed: boolean) =>
                         : option.value !== QUICK_SERVICE_VALUE,
                     )
                     .map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <option
+                        key={option.id ?? `fallback:${option.value}`}
+                        value={option.value}
+                      >
                         {option.value}
                       </option>
                     ))}

@@ -6,6 +6,7 @@ import {
   Archive,
   CalendarClock,
   LayoutDashboard,
+  LogOut,
   ReceiptText,
   Settings,
   Users,
@@ -58,6 +59,17 @@ export function CrmShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+
+        <form action="/api/auth/logout" method="post" className="mb-1">
+          <button
+            type="submit"
+            aria-label="Abmelden"
+            title="Abmelden"
+            className="grid size-12 place-items-center rounded-xl border border-[#d1ded9] bg-white text-[#2e5c53] transition-all duration-200 hover:border-[#d8b7b9] hover:bg-[#fbf0f1] hover:text-[#935d63]"
+          >
+            <LogOut className="size-5" />
+          </button>
+        </form>
       </aside>
 
       <div className="pl-[86px]">
