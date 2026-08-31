@@ -5,6 +5,7 @@ type CreatedInvoice = {
   invoiceNumber: string | null;
   lifecycleStatus: "ENTWURF" | "FINALISIERT";
   paymentMethod: "BANK_TRANSFER" | "CASH" | "CARD";
+  paymentStatus: "OPEN" | "PAID";
   items: Array<{
     service: string;
     quantity: number;
@@ -84,15 +85,19 @@ test("finalisierte Rechnung ist im echten Workspace schreibgeschützt", async ({
     .last();
   await expect(lockMessage).toBeVisible();
 
-  const editor = lockMessage.locator("xpath=..");
+  const workspace = lockMessage.locator(
+    "xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' space-y-4 ')][1]",
+  );
+  const editor = workspace.locator("fieldset").first();
+
   await expect(editor.getByLabel("Kundin")).toBeDisabled();
   await expect(editor.getByLabel("Zahlungsart")).toBeDisabled();
   await expect(editor.getByLabel("Zahlungsstatus")).toBeDisabled();
-  await expect(editor.getByRole("button", { name: "Entwurf speichern" })).toHaveCount(0);
-  await expect(editor.getByRole("button", { name: "Finalisieren" })).toHaveCount(0);
-  await expect(editor.getByRole("link", { name: "Vorschau" })).toBeVisible();
-  await expect(editor.getByRole("link", { name: "PDF herunterladen" })).toBeVisible();
-  await expect(editor.getByRole("link", { name: "Zum Archiv" })).toBeVisible();
+  await expect(workspace.getByRole("button", { name: "Entwurf speichern" })).toHaveCount(0);
+  await expect(workspace.getByRole("button", { name: "Finalisieren" })).toHaveCount(0);
+  await expect(workspace.getByRole("link", { name: "Vorschau" })).toBeVisible();
+  await expect(workspace.getByRole("link", { name: "PDF herunterladen" })).toBeVisible();
+  await expect(workspace.getByRole("link", { name: "Zum Archiv" })).toBeVisible();
 });
 
 test("Kartenzahlung bleibt beim Öffnen eines Entwurfs erhalten", async ({
@@ -103,6 +108,7 @@ test("Kartenzahlung bleibt beim Öffnen eines Entwurfs erhalten", async ({
   const customerId = await createTestCustomer(request, unique);
   const draft = await createFreeInvoice(request, customerId, "CARD");
   expect(draft.paymentMethod).toBe("CARD");
+  expect(draft.paymentStatus).toBe("PAID");
 
   await page.goto(`/invoices?invoiceId=${encodeURIComponent(draft.id)}`);
 
