@@ -86,7 +86,7 @@ test("invoice workspace and archive are visually usable on desktop and tablet", 
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/invoices/archive");
-  await expect(page.getByText(finalized.invoiceNumber ?? "")).toBeVisible();
+  await expect(page.getByText(finalized.invoiceNumber ?? "", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Ansehen" }).first()).toBeVisible();
   await page.screenshot({ path: `${OUTPUT_DIR}/invoice-archive-desktop.png`, fullPage: true });
 
