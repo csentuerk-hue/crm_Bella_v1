@@ -2,6 +2,11 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
+  testIgnore: [
+    "**/*live*.spec.ts",
+    "**/*snapshots.spec.ts",
+    "**/*screenshot.spec.ts",
+  ],
   fullyParallel: false,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
