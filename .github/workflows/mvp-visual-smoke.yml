@@ -1,0 +1,75 @@
+name: MVP Visual Smoke
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "tests/**"
+      - ".github/workflows/mvp-visual-smoke.yml"
+
+jobs:
+  visual-smoke:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bella
+          POSTGRES_PASSWORD: bella
+          POSTGRES_DB: bella_crm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bella -d bella_crm"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://bella:bella@localhost:5432/bella_crm?schema=public
+      DATABASE_URL_UNPOOLED: postgresql://bella:bella@localhost:5432/bella_crm?schema=public
+      CI: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Apply committed migrations to disposable DB
+        run: npm run db:migrate:deploy
+
+      - name: Align disposable DB to current schema
+        run: npm run db:push
+
+      - name: Run focused regression tests
+        run: >-
+          npx playwright test
+          tests/invoice-workspace-readonly-e2e.spec.ts
+          tests/appointment-invoice-flow.spec.ts
+          tests/free-invoice-flow.spec.ts
+          tests/invoice-archive-links.spec.ts
+          --workers=1
+
+      - name: Capture desktop and tablet screenshots
+        run: npx playwright test tests/mvp-visual-smoke.spec.ts --workers=1
+
+      - name: Upload visual review artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvp-visual-review
+          path: artifacts/mvp-visual
+          if-no-files-found: warn
+          retention-days: 7
