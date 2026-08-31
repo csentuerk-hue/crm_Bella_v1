@@ -625,7 +625,9 @@ export default function InvoiceArchivePage() {
                       href={`/invoices?invoiceId=${invoice.id}`}
                       className="btn-secondary h-8 text-xs"
                     >
-                      Bearbeiten
+                      {invoice.lifecycleStatus === "FINALISIERT" || invoice.documentStatus !== "DRAFT"
+                        ? "Ansehen"
+                        : "Bearbeiten"}
                     </Link>
                     <label className="ml-auto flex items-center gap-2 text-xs text-slate-600">
                       Zahlungsstatus

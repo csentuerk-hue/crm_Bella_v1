@@ -71,7 +71,7 @@ type QuickCustomerForm = {
 
 const QUICK_SERVICE_VALUE = "Schnelltermin";
 const QUICK_PLACEHOLDER_CUSTOMER_NAME = "Schnelltermin (Platzhalter)";
-const DEFAULT_PAYMENT_METHOD: PaymentMethod = "BANK_TRANSFER";
+const DEFAULT_PAYMENT_METHOD: PaymentMethod = "CASH";
 
 const PAYMENT_OPTIONS: Array<{ value: PaymentMethod; label: string }> = [
   { value: "BANK_TRANSFER", label: "Überweisung" },
