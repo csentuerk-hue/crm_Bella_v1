@@ -8,6 +8,11 @@ import {
 
 const E2E_ADMIN_PASSWORD = "Bella-E2E-Only-Password-2026!";
 const E2E_AUTH_SECRET = "bella-e2e-only-auth-secret-not-for-production-2026";
+const NON_FUNCTIONAL_TESTS = [
+  "**/*live*.spec.ts",
+  "**/*snapshots.spec.ts",
+  "**/*screenshot.spec.ts",
+];
 
 process.env.CRM_ADMIN_PASSWORD ??= E2E_ADMIN_PASSWORD;
 process.env.CRM_AUTH_SECRET ??= E2E_AUTH_SECRET;
@@ -30,11 +35,7 @@ const authenticatedStorageState = {
 
 export default defineConfig({
   testDir: "./tests",
-  testIgnore: [
-    "**/*live*.spec.ts",
-    "**/*snapshots.spec.ts",
-    "**/*screenshot.spec.ts",
-  ],
+  testIgnore: NON_FUNCTIONAL_TESTS,
   fullyParallel: false,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
@@ -63,7 +64,7 @@ export default defineConfig({
     },
     {
       name: "chromium",
-      testIgnore: "**/auth-access.spec.ts",
+      testIgnore: ["**/auth-access.spec.ts", ...NON_FUNCTIONAL_TESTS],
       use: {
         ...devices["Desktop Chrome"],
         storageState: authenticatedStorageState,
