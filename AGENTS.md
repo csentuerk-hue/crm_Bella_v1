@@ -56,6 +56,24 @@ Architekturleitbild:
 - Bestehende Designsystem- und Komponentenentscheidungen bevorzugen
 - UI-Änderungen immer auf Desktop und Tablet prüfen; Mobile zusätzlich bei betroffenem Layout
 
+### 4a. Installierte Design-Skills und Priorität
+Projektlokal installierte Codex-Skills unter `.agents/skills/` dürfen für UI-Arbeit verwendet werden. Ihre Regeln ergänzen dieses Repository, überschreiben aber niemals die Bella-spezifischen Produkt-, Daten-, Rechnungs-, Sicherheits- oder Deployment-Regeln.
+
+Priorität bei Konflikten:
+1. Funktionalität, Datenintegrität, Rechnungsregeln, Datenschutz und bestehender Studio-Workflow
+2. Diese `AGENTS.md`, `PROJECT_PROFILE.md` und das vorhandene Bella-Designsystem
+3. `impeccable` für Audit, Polish, Hardening, Responsive, Accessibility, UX-Klarheit und Designsystem-Treue
+4. `redesign-existing-projects` für gezielte Verbesserungen bestehender Oberflächen ohne Rewrite
+5. `emil-design-eng`, `animate`, `review-animations`, `improve-animations`, `find-animation-opportunities` für zweckmäßige Motion und Mikrointeraktionen
+6. `gpt-taste` nur bei ausdrücklich gewünschter kreativer/experimenteller Gestaltung; seine Marketing-, AIDA-, GSAP-, Scroll-Pinning- und Cinematic-Regeln sind **nicht** Standard für CRM-Arbeitsoberflächen
+
+Zusätzliche Leitplanken:
+- Bella CRM ist überwiegend **Operate UI**: Arbeitsgeschwindigkeit, Lesbarkeit und klare Zustände schlagen Show-Effekte.
+- Häufig verwendete Aktionen nicht unnötig animieren oder verlangsamen.
+- Keine neue Motion-/GSAP-Abhängigkeit allein wegen eines Skills hinzufügen; zuerst prüfen, ob CSS/React/Tailwind ausreichen.
+- Bestehende Brandfarben, Typografie, Komponenten und Interaktionsmuster bewahren, sofern der Task keinen Redesign-Auftrag enthält.
+- Impeccable-Hook-Funde sind Hinweise zur Prüfung; sie berechtigen nicht zu unrelated Refactors oder automatischen Änderungen außerhalb des Tasks.
+
 ## 5. Daten- und Sicherheitsregeln
 Bella CRM verarbeitet echte personenbezogene und geschäftsrelevante Daten. Deshalb:
 - Kundinnen-, Termin-, Rechnungs- und Consent-Daten nie wie Demo-Daten behandeln
