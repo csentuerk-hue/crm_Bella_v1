@@ -55,8 +55,9 @@ type InvoiceEditorForm = {
 };
 
 const paymentMethodOptions: Array<{ value: PaymentMethod; label: string }> = [
-  { value: "BANK_TRANSFER", label: "Überweisung" },
   { value: "CASH", label: "Barzahlung" },
+  { value: "CARD", label: "Kartenzahlung" },
+  { value: "BANK_TRANSFER", label: "Überweisung" },
 ];
 
 const paymentStatusOptions: Array<{ value: PaymentStatus; label: string }> = [
@@ -149,10 +150,7 @@ function lineTotalCents(line: LineForm): number | null {
 function mapInvoiceToEditor(invoice: InvoiceDTO): InvoiceEditorForm {
   return {
     customerId: invoice.customerId ?? "",
-    paymentMethod:
-      invoice.paymentMethod === "CASH" || invoice.paymentMethod === "BANK_TRANSFER"
-        ? invoice.paymentMethod
-        : "CASH",
+    paymentMethod: invoice.paymentMethod,
     paymentStatus: invoice.paymentStatus === "PAID" ? "PAID" : "OPEN",
     issueDate: toDateInput(invoice.issueDate),
     serviceDate: toDateInput(invoice.serviceDate),
@@ -234,6 +232,13 @@ function buildInvoicePdfHref(invoice: InvoiceDTO): string {
   return `/api/invoices/${invoice.id}/pdf?${params.toString()}`;
 }
 
+function isInvoiceFinalized(invoice: InvoiceDTO | null): boolean {
+  if (!invoice) {
+    return false;
+  }
+  return invoice.lifecycleStatus === "FINALISIERT" || invoice.documentStatus !== "DRAFT";
+}
+
 export default function InvoicesCreatePage() {
   const [requestedInvoiceId, setRequestedInvoiceId] = useState<string | null>(null);
 
@@ -280,7 +285,7 @@ export default function InvoicesCreatePage() {
     () => editableInvoices.find((invoice) => invoice.id === selectedInvoiceId) ?? null,
     [editableInvoices, selectedInvoiceId],
   );
-  const isSelectedInvoiceFinalized = selectedInvoice?.lifecycleStatus === "FINALISIERT";
+  const isSelectedInvoiceFinalized = isInvoiceFinalized(selectedInvoice);
 
   const selectedCreateCustomer = useMemo(
     () => customers.find((customer) => customer.id === createCustomerId) ?? null,
@@ -408,7 +413,7 @@ export default function InvoicesCreatePage() {
       setCreateAppointmentId((current) => current || billableAppointments[0]?.id || "");
       setCreateCustomerId((current) => current || activeCustomers[0]?.id || "");
       setNotice((current) => {
-        if (requestedInvoiceId && fetchedExternal && fetchedExternal.lifecycleStatus === "FINALISIERT") {
+        if (requestedInvoiceId && fetchedExternal && isInvoiceFinalized(fetchedExternal)) {
           return {
             type: "info",
             text: "Finalisierte Rechnung aus dem Archiv ist im Lesemodus geöffnet.",
@@ -657,7 +662,7 @@ export default function InvoicesCreatePage() {
     if (!selectedInvoice || !editor) {
       return;
     }
-    if (selectedInvoice.lifecycleStatus !== "ENTWURF") {
+    if (isInvoiceFinalized(selectedInvoice)) {
       setNotice({
         type: "info",
         text: "Diese Rechnung ist finalisiert und kann nicht mehr bearbeitet werden.",
@@ -737,7 +742,7 @@ export default function InvoicesCreatePage() {
   };
 
   const deleteDraft = async () => {
-    if (!selectedInvoice || selectedInvoice.lifecycleStatus !== "ENTWURF") {
+    if (!selectedInvoice || isInvoiceFinalized(selectedInvoice)) {
       return;
     }
 
@@ -1028,7 +1033,7 @@ export default function InvoicesCreatePage() {
                     {formatDraftLabel(invoice)}
                   </option>
                 ))}
-                {externalInvoice && externalInvoice.lifecycleStatus !== "ENTWURF" && (
+                {externalInvoice && isInvoiceFinalized(externalInvoice) && (
                   <option value={externalInvoice.id}>
                     {externalInvoice.invoiceNumber ?? "Finalisierte Rechnung"} ·{" "}
                     {externalInvoice.customerName}
@@ -1079,7 +1084,7 @@ export default function InvoicesCreatePage() {
                   <Link href="/invoices/archive" className="btn-secondary h-9">
                     Zum Archiv
                   </Link>
-                  {selectedInvoice.lifecycleStatus === "ENTWURF" && (
+                  {!isSelectedInvoiceFinalized && (
                     <button
                       type="button"
                       className="btn-secondary h-9 border-[#e8c8cf] text-[#8a4a5a]"
@@ -1134,7 +1139,7 @@ export default function InvoicesCreatePage() {
                               ...current,
                               paymentMethod: event.target.value as PaymentMethod,
                               paymentStatus:
-                                event.target.value === "CASH" ? "PAID" : current.paymentStatus,
+                                event.target.value === "BANK_TRANSFER" ? "OPEN" : "PAID",
                             }
                           : current,
                       )

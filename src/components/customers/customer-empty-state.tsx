@@ -9,7 +9,7 @@ export function CustomerEmptyState({ onCreateCustomer }: CustomerEmptyStateProps
   return (
     <section className="relative grid min-h-[calc(100vh-11.5rem)] place-items-center overflow-hidden rounded-[30px] border border-[#d4e3de] bg-[linear-gradient(180deg,#ffffff_0%,#f7fcfa_100%)] p-6 shadow-[0_14px_32px_rgba(13,80,74,0.12)]">
       <Image
-        src="/branding/bella-watermark.png"
+        src="/branding/bella-watermark.png" loading="eager"
         alt="Bella by Sobiella Wasserzeichen"
         fill
         className="pointer-events-none object-contain opacity-10"

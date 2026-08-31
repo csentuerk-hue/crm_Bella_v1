@@ -1,0 +1,58 @@
+name: Migration Parity
+
+on:
+  pull_request:
+    paths:
+      - "prisma/**"
+      - ".github/workflows/migration-parity.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "prisma/**"
+      - ".github/workflows/migration-parity.yml"
+
+jobs:
+  fresh-database-parity:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bella
+          POSTGRES_PASSWORD: bella
+          POSTGRES_DB: bella_crm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bella -d bella_crm"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://bella:bella@localhost:5432/bella_crm?schema=public
+      DATABASE_URL_UNPOOLED: postgresql://bella:bella@localhost:5432/bella_crm?schema=public
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply committed migrations to fresh PostgreSQL
+        run: npm run db:migrate:deploy
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Verify migrated database matches schema.prisma
+        run: npx prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code

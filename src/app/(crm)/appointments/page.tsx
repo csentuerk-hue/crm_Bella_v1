@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -71,7 +71,7 @@ type QuickCustomerForm = {
 
 const QUICK_SERVICE_VALUE = "Schnelltermin";
 const QUICK_PLACEHOLDER_CUSTOMER_NAME = "Schnelltermin (Platzhalter)";
-const DEFAULT_PAYMENT_METHOD: PaymentMethod = "BANK_TRANSFER";
+const DEFAULT_PAYMENT_METHOD: PaymentMethod = "CASH";
 
 const PAYMENT_OPTIONS: Array<{ value: PaymentMethod; label: string }> = [
   { value: "BANK_TRANSFER", label: "Überweisung" },
@@ -1858,7 +1858,10 @@ const mediaConsentBadge = (allowed: boolean) =>
                         : option.value !== QUICK_SERVICE_VALUE,
                     )
                     .map((option) => (
-                      <option key={option.value} value={option.value}>
+                      <option
+                        key={option.id ?? `fallback:${option.value}`}
+                        value={option.value}
+                      >
                         {option.value}
                       </option>
                     ))}

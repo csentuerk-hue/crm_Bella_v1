@@ -25,6 +25,18 @@ test("invoice flows remain stable and JSON-safe", async ({ request }, testInfo) 
   const unique = `${Date.now()}-${testInfo.workerIndex}-${Math.random().toString(36).slice(2, 8)}`;
   const customerName = `JSON Stabil Kundin ${unique}`;
 
+  const invoiceSettingsResponse = await request.get("/api/settings/invoice");
+  expect(invoiceSettingsResponse.ok()).toBeTruthy();
+  const invoiceSettings = (await invoiceSettingsResponse.json()) as Record<string, unknown>;
+  const invoiceSettingsUpdateResponse = await request.put("/api/settings/invoice", {
+    data: {
+      ...invoiceSettings,
+      bankAccountHolder: "Bella by Sobiella",
+      bankIban: "DE02120300000000202051",
+    },
+  });
+  expect(invoiceSettingsUpdateResponse.ok()).toBeTruthy();
+
   const customerResponse = await request.post("/api/customers", {
     data: {
       name: customerName,

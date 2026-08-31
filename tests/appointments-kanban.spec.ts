@@ -10,7 +10,7 @@ async function createCustomerViaApi(request: APIRequestContext, unique: string) 
       name: `Kanban Kundin ${unique}`,
       email: `kanban-${unique}@example.com`,
       phone: "01701234567",
-      notes: "E2E Testkundin fuer Kanban-Spalten",
+      notes: "E2E Testkundin fuer aktuelle Termin-Spalten",
     },
   });
   expect(response.status()).toBe(201);
@@ -41,19 +41,21 @@ async function createAppointmentViaApi(
   return (await response.json()) as { id: string };
 }
 
-test("Appointments board: columns, sums, drag-drop and edit modal remain stable", async ({
+test("Appointments board: current columns and edit modal remain stable", async ({
   page,
   request,
 }) => {
-  const unique = Date.now().toString().slice(-6);
+  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const customer = await createCustomerViaApi(request, unique);
 
-  const inTwoHours = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
-  const inThreeHours = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString();
+  const now = Date.now();
+  const inTwoHours = new Date(now + 2 * 60 * 60 * 1000).toISOString();
+  const nextWeek = new Date(now + 8 * 24 * 60 * 60 * 1000).toISOString();
+  const twoHoursAgo = new Date(now - 2 * 60 * 60 * 1000).toISOString();
 
-  const openAppointment = await createAppointmentViaApi(request, {
+  await createAppointmentViaApi(request, {
     customerId: customer.id,
-    service: `Kanban Offen ${unique}`,
+    service: `Diese Woche ${unique}`,
     status: "OFFEN",
     startsAt: inTwoHours,
     priceCents: 8500,
@@ -61,65 +63,57 @@ test("Appointments board: columns, sums, drag-drop and edit modal remain stable"
 
   await createAppointmentViaApi(request, {
     customerId: customer.id,
-    service: `Kanban Geplant ${unique}`,
+    service: `Spaeter ${unique}`,
     status: "GEPLANT",
-    startsAt: inThreeHours,
+    startsAt: nextWeek,
     priceCents: 7900,
   });
 
-  await page.goto("/appointments?view=kanban");
+  await createAppointmentViaApi(request, {
+    customerId: customer.id,
+    service: `Vergangen ${unique}`,
+    status: "OFFEN",
+    startsAt: twoHoursAgo,
+    priceCents: 6900,
+  });
+
+  await page.goto("/appointments");
   await expect(page.getByRole("heading", { name: "Termine" })).toBeVisible();
   await expect(page.getByTestId("appointments-kanban-board")).toBeVisible();
 
-  await expect(page.getByTestId("kanban-column-offen")).toBeVisible();
-  await expect(page.getByTestId("kanban-column-geplant")).toBeVisible();
-  await expect(page.getByTestId("kanban-column-erledigt")).toBeVisible();
-  await expect(page.getByTestId("kanban-column-abgerechnet")).toBeVisible();
-  await expect(page.getByTestId("kanban-column-storniert")).toBeVisible();
+  const openColumn = page.getByTestId("kanban-column-offen");
+  const thisWeekColumn = page.getByTestId("kanban-column-diese_woche");
+  const pastColumn = page.getByTestId("kanban-column-vergangen");
 
+  await expect(openColumn).toBeVisible();
+  await expect(thisWeekColumn).toBeVisible();
+  await expect(pastColumn).toBeVisible();
   await expect(page.getByTestId("kanban-column-count-offen")).toContainText("Termin");
-  await expect(page.getByTestId("kanban-column-sum-offen")).toContainText("€");
-  await expect(page.getByTestId("kanban-column-sum-geplant")).toContainText("€");
+  await expect(page.getByTestId("kanban-column-count-diese_woche")).toContainText("Termin");
+  await expect(page.getByTestId("kanban-column-count-vergangen")).toContainText("Termin");
+
+  await expect(openColumn.getByText(`Spaeter ${unique}`)).toBeVisible();
+  await expect(thisWeekColumn.getByText(`Diese Woche ${unique}`)).toBeVisible();
+  await expect(pastColumn.getByText(`Vergangen ${unique}`)).toBeVisible();
 
   const board = page.getByTestId("appointments-kanban-board");
   const overflowX = await board.evaluate((element) => window.getComputedStyle(element).overflowX);
   expect(overflowX === "auto" || overflowX === "scroll").toBeTruthy();
 
-  const dragSource = page
-    .getByTestId("kanban-column-offen")
-    .locator("button")
-    .filter({ hasText: `Kanban Offen ${unique}` })
-    .first();
-  const dropTarget = page.getByTestId("kanban-column-geplant");
-  await dragSource.dispatchEvent("dragstart");
-  await dropTarget.dispatchEvent("dragover");
-  await dropTarget.dispatchEvent("drop");
-  await dragSource.dispatchEvent("dragend");
-
-  await expect
-    .poll(async () => {
-      const appointmentsAfterDrop = await request.get("/api/appointments?includeCancelled=true", {
-        headers: { "x-role": "ADMINISTRATORIN" },
-      });
-      if (appointmentsAfterDrop.status() !== 200) return "REQUEST_FAILED";
-      const appointmentPayload = (await appointmentsAfterDrop.json()) as Array<{ id: string; status: string }>;
-      const moved = appointmentPayload.find((appointment) => appointment.id === openAppointment.id);
-      return moved?.status ?? "NOT_FOUND";
-    })
-    .toBe("GEPLANT");
-
-  const movedCard = page
-    .getByTestId("kanban-column-geplant")
+  const currentWeekCard = thisWeekColumn
     .locator("button")
     .filter({ hasText: customer.name })
-    .filter({ hasText: `Kanban Offen ${unique}` })
+    .filter({ hasText: `Diese Woche ${unique}` })
     .first();
-  await expect(movedCard).toBeVisible();
-  await movedCard.click();
+  await expect(currentWeekCard).toBeVisible();
+  await currentWeekCard.click();
 
+  await expect(page.getByRole("heading", { name: "Termin-Detail" })).toBeVisible();
+  await expect(page.getByText(`Diese Woche ${unique}`).last()).toBeVisible();
   await page.getByRole("button", { name: "Bearbeiten" }).click();
+
   await expect(page.getByRole("heading", { name: "Termin bearbeiten" })).toBeVisible();
-  await page.getByLabel("Leistung").fill(`Kanban Offen edited ${unique}`);
+  await page.getByLabel("Titel (optional)").fill(`Bearbeitet ${unique}`);
   await page.getByRole("button", { name: "Termin speichern" }).click();
   await expect(page.getByText("Termin aktualisiert.")).toBeVisible();
 });

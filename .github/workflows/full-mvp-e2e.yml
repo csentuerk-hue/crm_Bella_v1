@@ -1,0 +1,88 @@
+name: Full MVP Verification
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "prisma/**"
+      - "tests/**"
+      - "scripts/**"
+      - "public/**"
+      - "package.json"
+      - "package-lock.json"
+      - "next.config.*"
+      - "playwright.config.ts"
+      - "tsconfig.json"
+      - "eslint.config.*"
+      - ".github/workflows/full-mvp-e2e.yml"
+
+concurrency:
+  group: full-mvp-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  full-mvp-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bella
+          POSTGRES_PASSWORD: bella
+          POSTGRES_DB: bella_crm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bella -d bella_crm"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://bella:bella@localhost:5432/bella_crm?schema=public
+      DATABASE_URL_UNPOOLED: postgresql://bella:bella@localhost:5432/bella_crm?schema=public
+      CI: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Apply committed migrations to disposable DB
+        run: npm run db:migrate:deploy
+
+      - name: Align disposable DB to current schema
+        run: npm run db:push
+
+      - name: Production build against disposable DB
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run complete functional Playwright suite serially
+        run: npm run test:e2e -- --workers=1
+
+      - name: Upload Playwright diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-mvp-verification-diagnostics
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7

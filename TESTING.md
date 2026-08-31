@@ -11,12 +11,24 @@ Tests sichern reale Studio-Workflows ab (Kundinnen, Termine, Rechnungen, Archiv,
 
 ## Playwright-Strategie
 - Fokus auf Kernabläufe:
+  - Zugriffsschutz/Login/Logout
   - Kundin anlegen/bearbeiten/suchen
   - Termin anlegen und Statuswechsel
   - Rechnung aus Termin
   - Freie Rechnung (ohne Termin, aber mit Kundin)
   - Rechnungsarchiv-Suche und Statuspflege
   - Vorschau und PDF
+- Lokale Playwright-Läufe verwenden ausschließlich fest definierte E2E-Testzugangsdaten aus `playwright.config.ts`; diese Werte sind keine Production-Secrets.
+- Die regulären Fachtests laufen mit einer signierten Test-Session.
+- `tests/auth-access.spec.ts` läuft bewusst ohne vorab gesetzte Session und prüft die Schutzgrenze selbst.
+
+## Zugriffsschutz-Checks
+- Nicht authentifizierte CRM-Seiten müssen nach `/login` umleiten.
+- Direkte nicht authentifizierte API-Aufrufe müssen `401` liefern.
+- Falsches Passwort darf kein Session-Cookie erzeugen.
+- Erfolgreicher Login muss ein signiertes `HttpOnly`-Cookie erzeugen.
+- Logout muss die Session entfernen und weitere API-Aufrufe wieder blockieren.
+- Auth-Tests dürfen nicht durch globale Test-Bypässe oder deaktivierte Production-Schutzlogik „grün“ gemacht werden.
 
 ## E2E-Isolation (verbindlich)
 - Keine global geteilten Testdaten ohne eindeutige Marker.
@@ -49,6 +61,10 @@ Tests sichern reale Studio-Workflows ab (Kundinnen, Termine, Rechnungen, Archiv,
 ```bash
 npx playwright test tests/<datei>.spec.ts --workers=1
 ```
+- Zugriffsschutz gezielt:
+```bash
+npx playwright test tests/auth-access.spec.ts --project=auth --workers=1
+```
 - Relevante Teilmenge:
 ```bash
 npx playwright test tests/spec-a.spec.ts tests/spec-b.spec.ts
@@ -64,3 +80,4 @@ npm run test:e2e
 - API-Fehlerfälle ohne saubere JSON-Antworten
 - Vorschau/PDF-Inkonsistenzen
 - Ungesicherte oder unklare Datenlöschpfade in Tests
+- Authentifizierungs- oder Session-Bypässe im Produktivpfad

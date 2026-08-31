@@ -17,7 +17,7 @@ export function toInvoiceKind(
 export function defaultPaymentStatusByMethod(
   paymentMethod: PaymentMethod,
 ): "OPEN" | "PAID" {
-  if (paymentMethod === "CASH") {
+  if (paymentMethod === "CASH" || paymentMethod === "CARD") {
     return "PAID";
   }
   return "OPEN";

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -630,7 +630,7 @@ export default function CustomersPage() {
         <main data-testid="customers-main-column" className="min-h-0 overflow-y-auto rounded-[28px] border border-[#d5e4df] bg-white p-4 shadow-[0_12px_24px_rgba(13,80,74,0.1)]">
           {!selectedCustomer && !isCreating ? (
             <section className="relative grid min-h-[calc(100vh-16rem)] place-items-center overflow-hidden rounded-3xl border border-[#dceae4] bg-[linear-gradient(180deg,#ffffff_0%,#f8fcfa_100%)]">
-              <Image src="/branding/bella-watermark.png" alt="Bella by Sobiella Wasserzeichen" fill className="pointer-events-none object-contain opacity-10" sizes="(min-width: 1024px) 50vw, 100vw" />
+              <Image src="/branding/bella-watermark.png" loading="eager" alt="Bella by Sobiella Wasserzeichen" fill className="pointer-events-none object-contain opacity-10" sizes="(min-width: 1024px) 50vw, 100vw" />
               <div className="relative z-10 flex flex-col items-center gap-2">
                 <button type="button" className="btn-primary" onClick={startCreate}><Plus className="mr-2 size-4" />Neue Kundin</button>
               </div>
