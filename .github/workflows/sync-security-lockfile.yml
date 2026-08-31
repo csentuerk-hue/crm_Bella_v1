@@ -1,0 +1,40 @@
+name: Sync Security Lockfile
+
+on:
+  push:
+    branches:
+      - fix/mvp-flow-hardening
+    paths:
+      - package.json
+
+permissions:
+  contents: write
+
+jobs:
+  sync-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/mvp-flow-hardening
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Regenerate package lock
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Commit updated lockfile
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "Lockfile already synchronized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: sync lockfile for Next.js security patch"
+          git push origin HEAD:fix/mvp-flow-hardening
