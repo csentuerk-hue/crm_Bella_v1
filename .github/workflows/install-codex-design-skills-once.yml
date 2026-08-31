@@ -1,0 +1,76 @@
+name: Install Codex design skills once
+
+on:
+  push:
+    branches:
+      - chore/codex-design-skills
+    paths:
+      - ".github/workflows/install-codex-design-skills-once.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    env:
+      DISABLE_TELEMETRY: "1"
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: chore/codex-design-skills
+          fetch-depth: 0
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.20.0"
+
+      - name: Install Taste skills for Codex
+        run: >-
+          npx -y skills@latest add https://github.com/Leonxlnx/taste-skill
+          --skill redesign-existing-projects
+          --skill gpt-taste
+          --agent codex
+          --copy
+          --yes
+
+      - name: Install Emil Kowalski skills for Codex
+        run: >-
+          npx -y skills@latest add emilkowalski/skills
+          --skill emil-design-eng
+          --skill animate
+          --skill review-animations
+          --skill improve-animations
+          --skill find-animation-opportunities
+          --agent codex
+          --copy
+          --yes
+
+      - name: Install Impeccable for Codex
+        run: >-
+          npx -y impeccable@latest skills install
+          --yes
+          --providers=codex
+          --scope=project
+
+      - name: Show installed files
+        run: |
+          echo "--- .agents ---"
+          find .agents -maxdepth 4 -type f -print 2>/dev/null | sort || true
+          echo "--- .codex ---"
+          find .codex -maxdepth 3 -type f -print 2>/dev/null | sort || true
+          echo "--- git status ---"
+          git status --short
+
+      - name: Commit installed skills and remove workflow
+        run: |
+          rm -f .github/workflows/install-codex-design-skills-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: add Codex design skills"
+            git push origin HEAD:chore/codex-design-skills
+          fi
