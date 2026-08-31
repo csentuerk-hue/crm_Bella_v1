@@ -76,7 +76,8 @@ Das System unterstützt den Studio-Alltag von der Kundinnenpflege über Terminpl
 - Visuelle Regression für Rechnungsvorschau/PDF
 
 ## Verbindliche Referenzdokumente
-- [TESTING.md](C:\Users\CSent\Desktop\bella-crm-git-check\TESTING.md)
-- [DEPLOYMENT.md](C:\Users\CSent\Desktop\bella-crm-git-check\DEPLOYMENT.md)
-- [docs/invoice-rules.md](C:\Users\CSent\Desktop\bella-crm-git-check\docs\invoice-rules.md)
-- [docs/privacy-media-consent.md](C:\Users\CSent\Desktop\bella-crm-git-check\docs\privacy-media-consent.md)
+- [AGENTS.md](./AGENTS.md)
+- [TESTING.md](./TESTING.md)
+- [DEPLOYMENT.md](./DEPLOYMENT.md)
+- [docs/invoice-rules.md](./docs/invoice-rules.md)
+- [docs/privacy-media-consent.md](./docs/privacy-media-consent.md)
