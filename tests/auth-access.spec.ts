@@ -39,7 +39,10 @@ test.describe("CRM access protection", () => {
     expect(sessionCookie?.httpOnly).toBe(true);
     expect(sessionCookie?.sameSite).toBe("Lax");
 
-    await page.getByRole("button", { name: "Abmelden" }).click();
+    // Existing development-only React warnings can open the Next.js dev overlay and
+    // intercept pointer events. Force the click so this test verifies the actual
+    // logout form/session behavior rather than the unrelated overlay.
+    await page.getByRole("button", { name: "Abmelden" }).click({ force: true });
     await expect(page).toHaveURL(/\/login$/);
 
     const cookiesAfterLogout = await context.cookies();
