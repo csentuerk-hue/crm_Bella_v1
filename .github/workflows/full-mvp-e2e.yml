@@ -16,6 +16,10 @@ on:
       - "eslint.config.*"
       - ".github/workflows/full-mvp-e2e.yml"
 
+concurrency:
+  group: full-mvp-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   full-mvp-verification:
     runs-on: ubuntu-latest
