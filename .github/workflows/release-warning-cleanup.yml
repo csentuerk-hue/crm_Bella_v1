@@ -1,0 +1,60 @@
+name: Release Warning Cleanup
+
+on:
+  push:
+    branches:
+      - feat/crm-access-protection
+    paths:
+      - ".github/workflows/release-warning-cleanup.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/crm-access-protection
+      - name: Apply targeted warning cleanup
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          appointments = Path('src/app/(crm)/appointments/page.tsx')
+          text = appointments.read_text(encoding='utf-8-sig')
+          old = '''.map((option) => (\n                      <option key={option.value} value={option.value}>\n                        {option.value}\n                      </option>\n                    ))}'''
+          new = '''.map((option) => (\n                      <option\n                        key={option.id ?? `fallback:${option.value}`}\n                        value={option.value}\n                      >\n                        {option.value}\n                      </option>\n                    ))}'''
+          if old not in text:
+              raise SystemExit('Target service option block not found')
+          appointments.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          watermark_hits = 0
+          for path in Path('src').rglob('*.tsx'):
+              source = path.read_text(encoding='utf-8-sig')
+              marker = 'src="/branding/bella-watermark.png"'
+              if marker not in source:
+                  continue
+              if 'src="/branding/bella-watermark.png" loading="eager"' in source:
+                  continue
+              path.write_text(
+                  source.replace(marker, marker + ' loading="eager"'),
+                  encoding='utf-8',
+              )
+              watermark_hits += 1
+          print(f'Watermark files updated: {watermark_hits}')
+          PY
+      - name: Commit cleanup if changed
+        run: |
+          if git diff --quiet; then
+            echo "No cleanup changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src
+          git commit -m "fix: clear release runtime warnings"
+          git push origin HEAD:feat/crm-access-protection
