@@ -40,6 +40,23 @@ async function createInvoice(request: APIRequestContext, customerId: string, met
   return (await response.json()) as InvoiceDTO;
 }
 
+test("login is visually usable on desktop and tablet", async ({ page, context }) => {
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  await context.clearCookies();
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/login");
+  await expect(page.getByRole("heading", { name: "Bella CRM" })).toBeVisible();
+  await expect(page.getByLabel("Passwort")).toBeVisible();
+  await page.screenshot({ path: `${OUTPUT_DIR}/login-desktop.png`, fullPage: true });
+
+  await page.setViewportSize({ width: 1024, height: 1366 });
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Bella CRM" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Anmelden" })).toBeVisible();
+  await page.screenshot({ path: `${OUTPUT_DIR}/login-tablet.png`, fullPage: true });
+});
+
 test("invoice workspace and archive are visually usable on desktop and tablet", async ({ page, request }, testInfo) => {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   const unique = `${Date.now()}-${testInfo.workerIndex}`;
