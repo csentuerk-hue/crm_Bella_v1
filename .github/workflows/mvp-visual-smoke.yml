@@ -7,6 +7,10 @@ on:
       - "tests/**"
       - ".github/workflows/mvp-visual-smoke.yml"
 
+concurrency:
+  group: mvp-visual-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   visual-smoke:
     runs-on: ubuntu-latest
