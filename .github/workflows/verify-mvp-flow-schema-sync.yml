@@ -1,0 +1,76 @@
+name: Verify MVP flow against current schema
+
+on:
+  push:
+    branches:
+      - fix/mvp-flow-hardening
+    paths:
+      - ".github/workflows/verify-mvp-flow-schema-sync.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bella_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d bella_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bella_test
+      DATABASE_URL_UNPOOLED: postgresql://postgres:postgres@localhost:5432/bella_test
+      STRIPE_ACTIVE: "false"
+      CI: "true"
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/mvp-flow-hardening
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Apply committed migrations
+        run: npm run db:init
+
+      - name: Sync disposable test DB to current Prisma schema
+        run: npm run db:push
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run focused MVP tests serially
+        run: >-
+          npx playwright test
+          tests/invoice-workspace-readonly-e2e.spec.ts
+          tests/invoice-workspace-readonly-source.spec.ts
+          tests/appointment-invoice-flow.spec.ts
+          tests/free-invoice-flow.spec.ts
+          tests/invoice-archive-links.spec.ts
+          --workers=1
