@@ -37,7 +37,7 @@ test("appointment based invoice flow still works", async ({ request }, testInfo)
     data: {
       customerId,
       appointmentId,
-      paymentMethod: "BANK_TRANSFER",
+      paymentMethod: "CASH",
     },
   });
   expect(invoiceResponse.ok()).toBeTruthy();
@@ -48,12 +48,14 @@ test("appointment based invoice flow still works", async ({ request }, testInfo)
   expect(invoice.items.length).toBeGreaterThan(0);
   expect(invoice.invoiceNumber).toBeNull();
   expect(invoice.lifecycleStatus).toBe("ENTWURF");
+  expect(invoice.paymentMethod).toBe("CASH");
+  expect(invoice.paymentStatus).toBe("PAID");
 
   const finalizeResponse = await request.put(`/api/invoices/${invoice.id}`, {
     data: {
       action: "FINALIZE",
-      paymentMethod: "BANK_TRANSFER",
-      paymentStatus: "OPEN",
+      paymentMethod: "CASH",
+      paymentStatus: "PAID",
       recipientName: `Terminrechnung Kundin ${unique}`,
       recipientStreet: "Musterstraße",
       recipientHouseNumber: "1",
